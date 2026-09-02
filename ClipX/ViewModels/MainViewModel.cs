@@ -232,6 +232,7 @@ public partial class MainViewModel : ViewModelBase
         if (clipboard != null)
         {
             await clipboard.ClearAsync();
+            await clipboard.SetTextAsync("");
         }
     }
 }

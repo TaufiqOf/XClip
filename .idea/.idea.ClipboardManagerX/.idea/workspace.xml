@@ -48,11 +48,7 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/d2e95a5b95484ffc8ac21f4e5fa4538b12400/a1/480f4c3d/AvaloniaXamlLoader.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/metadata/66775ddc755443d086da1bcc29c5a7ac9c00/49/ca2a4c5f/AutoLauncher.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/e666458222ed08733d1f2578bdcec3557e4fac3e9dab3acc5d3381e79951c7/ThrowHelpers.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/ClipboardManagerX/AutoStartManager.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/ClipboardManagerX/TruncateConverter.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file:///tmp/JetBrainsPerUserTemp-1000-1/SourceGeneratedDocuments/00D7ECBA57620BEC6943527E/CommunityToolkit.Mvvm.SourceGenerators/CommunityToolkit.Mvvm.SourceGenerators.ObservablePropertyGenerator/ClipboardManagerX.ViewModels.ClipBoardItem.g.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file:///tmp/JetBrainsPerUserTemp-1000-1/SourceGeneratedDocuments/00D7ECBA57620BEC6943527E/CommunityToolkit.Mvvm.SourceGenerators/CommunityToolkit.Mvvm.SourceGenerators.ObservablePropertyGenerator/ClipboardManagerX.ViewModels.MainViewModel.g.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file:///tmp/JetBrainsPerUserTemp-1000-1/SourceGeneratedDocuments/00D7ECBA57620BEC6943527E/CommunityToolkit.Mvvm.SourceGenerators/CommunityToolkit.Mvvm.SourceGenerators.RelayCommandGenerator/ClipboardManagerX.ViewModels.ClipBoardItem.CopyAsync.g.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="mock:///Immediate Window" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
@@ -141,7 +137,11 @@
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="Initial commit of ClipboardManagerX application with core functionality, including clipboard monitoring, tray icon support, and basic UI components." />
-    <option name="LAST_COMMIT_MESSAGE" value="Initial commit of ClipboardManagerX application with core functionality, including clipboard monitoring, tray icon support, and basic UI components." />
+    <MESSAGE value="Add README file with project overview, features, and setup instructions for ClipX" />
+    <MESSAGE value="Update README to reflect project name change from ClipboardManagerX to ClipX" />
+    <MESSAGE value="Update .gitignore to include dist/ directory and ensure proper formatting" />
+    <MESSAGE value="Remove Windows build script for Quran application" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove Windows build script for Quran application" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
