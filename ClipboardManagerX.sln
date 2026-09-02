@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipboardManagerX", "ClipboardManagerX\ClipboardManagerX.csproj", "{BE97FEEF-63F2-4243-84DF-C9D28C0DBA94}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE97FEEF-63F2-4243-84DF-C9D28C0DBA94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE97FEEF-63F2-4243-84DF-C9D28C0DBA94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE97FEEF-63F2-4243-84DF-C9D28C0DBA94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE97FEEF-63F2-4243-84DF-C9D28C0DBA94}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
