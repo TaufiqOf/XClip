@@ -1,4 +1,4 @@
-# ClipboardManagerX (ClipX)
+# ClipX
 
 ClipboardManagerX is a lightweight desktop clipboard history manager built with **Avalonia UI** and **.NET 10**.
 It runs in the system tray, keeps your recent copied text items, and lets you quickly re-copy any previous entry.
