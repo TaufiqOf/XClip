@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 
-namespace ClipboardManagerX.Converters;
+namespace ClipX.Converters;
 
 public class TruncateConverter : IValueConverter
 {

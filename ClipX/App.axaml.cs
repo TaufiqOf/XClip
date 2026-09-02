@@ -6,9 +6,9 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using ClipboardManagerX.Views;
+using ClipX.Views;
 
-namespace ClipboardManagerX;
+namespace ClipX;
 
 public partial class App : Application
 {
@@ -48,8 +48,8 @@ public partial class App : Application
     private void UpdateIcons(ThemeVariant theme)
     {
         string assetUri = theme == ThemeVariant.Dark
-            ? "avares://ClipboardManagerX/Assets/icon-dark.ico"
-            : "avares://ClipboardManagerX/Assets/icon-light.ico";
+            ? "avares://ClipX/Assets/icon-dark.ico"
+            : "avares://ClipX/Assets/icon-light.ico";
 
         var uri = new Uri(assetUri);
 

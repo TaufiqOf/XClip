@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace ClipboardManagerX;
+namespace ClipX;
 
 sealed class Program
 {

@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace ClipboardManagerX.ViewModels;
+namespace ClipX.ViewModels;
 
 public abstract class ViewModelBase : ObservableObject
 {

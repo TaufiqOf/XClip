@@ -1,16 +1,16 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:ClipboardManagerX.ViewModels"
+        xmlns:vm="using:ClipX.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:avalonia="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
-        xmlns:converters="clr-namespace:ClipboardManagerX.Converters"
+        xmlns:converters="clr-namespace:ClipX.Converters"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="ClipboardManagerX.Views.MainWindow"
+        x:Class="ClipX.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Width="450" Height="600"
         WindowStartupLocation="Manual"
-        Icon="avares://ClipboardManagerX/Assets/icon-dark.ico"
+        Icon="avares://ClipX/Assets/icon-dark.ico"
         Title="ClipX">
 
     <Window.Resources>
@@ -30,6 +30,21 @@
             <Button Command="{Binding ClearHistoryCommand}" ToolTip.Tip="Clear Clipboard History">
                 <avalonia:FluentIcon Icon="Delete" FontSize="16" />
             </Button>
+            <!-- Auto Start Toggle -->
+            <ToggleButton IsChecked="{Binding IsAutoStartEnabled}" 
+                          ToolTip.Tip="Toggle Auto Start">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <avalonia:FluentIcon Icon="Play" FontSize="16" />
+                </StackPanel>
+            </ToggleButton>
+
+            <!-- Monitor Clipboard Toggle -->
+            <ToggleButton IsChecked="{Binding IsMonitoringClipboard}" 
+                          ToolTip.Tip="Toggle Clipboard Monitoring">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <avalonia:FluentIcon Icon="Eye" FontSize="16" />
+                </StackPanel>
+            </ToggleButton>
         </StackPanel>
 
         <!-- Clipboard List -->
@@ -57,17 +72,17 @@
                                            TextTrimming="CharacterEllipsis"
                                            VerticalAlignment="Center" />
 
-                                <!-- Inline Copy Button bound to MainViewModel.CopyCommand -->
+                                <!-- Inline Delete Button bound to MainViewModel.DeleteCommand -->
                                 <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                                        Command="{Binding CopyCommand}"
+                                        Command="{Binding DeleteCommand}"
                                         CommandParameter="{Binding}"
                                         Background="Transparent"
                                         BorderThickness="0"
                                         Padding="6"
                                         Margin="8,0,0,0"
                                         VerticalAlignment="Center"
-                                        ToolTip.Tip="Copy this item">
-                                    <avalonia:FluentIcon Icon="Copy" FontSize="14" />
+                                        ToolTip.Tip="Delete this item">
+                                    <avalonia:FluentIcon Icon="Delete" FontSize="14" />
                                 </Button>
 
                                 <!-- Timestamp -->

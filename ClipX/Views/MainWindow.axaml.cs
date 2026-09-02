@@ -1,8 +1,8 @@
 using System;
 using Avalonia.Controls;
-using ClipboardManagerX.ViewModels;
+using ClipX.ViewModels;
 
-namespace ClipboardManagerX.Views;
+namespace ClipX.Views;
 
 public partial class MainWindow : Window
 {
