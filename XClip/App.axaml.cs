@@ -14,7 +14,11 @@ namespace XClip;
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
-    private GlobalHotkeyService _hotkeyService = null!;
+    private GlobalHotkeyService? _hotkeyService;
+    private bool _isShuttingDown;
+    private bool _isCleanedUp;
+
+    public bool IsShuttingDown => _isShuttingDown;
 
     public override void Initialize()
     {
@@ -36,7 +40,11 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow(_hotkeyService);
+            desktop.ShutdownRequested += OnShutdownRequested;
+            desktop.Exit += OnDesktopExit;
         }
+
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 
         var trayIcons = TrayIcon.GetIcons(this);
         if (trayIcons != null && trayIcons.Count > 0)
@@ -101,17 +109,23 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            _isShuttingDown = true;
             if (desktop.MainWindow is MainWindow window)
             {
                 window.ForceExit();
             }
-            _hotkeyService?.Dispose(); // Cleanup hook on exit
+            CleanupResources();
             desktop.Shutdown();
         }
     }
 
     private void ToggleMainWindow()
     {
+        if (_isShuttingDown)
+        {
+            return;
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
             desktop.MainWindow is MainWindow window)
         {
@@ -120,5 +134,44 @@ public partial class App : Application
             else
                 window.ShowFromTray();
         }
+    }
+
+    private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
+    {
+        _isShuttingDown = true;
+
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow is MainWindow window)
+        {
+            window.ForceExit();
+        }
+
+        CleanupResources();
+    }
+
+    private void OnDesktopExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+    {
+        _isShuttingDown = true;
+        CleanupResources();
+        AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+    }
+
+    private void OnProcessExit(object? sender, EventArgs e)
+    {
+        _isShuttingDown = true;
+        CleanupResources();
+    }
+
+    private void CleanupResources()
+    {
+        if (_isCleanedUp)
+        {
+            return;
+        }
+
+        _isCleanedUp = true;
+        ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+        _hotkeyService?.Dispose();
+        _hotkeyService = null;
     }
 }

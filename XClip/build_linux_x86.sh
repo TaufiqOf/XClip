@@ -6,8 +6,8 @@ set -euo pipefail
 # ClipboardManagerX - Linux AppImage build script
 # ============================================================
 
-APP_NAME="ClipX"
-PROJECT_FILE="ClipX.csproj"
+APP_NAME="XClip"
+PROJECT_FILE="XClip.csproj"
 
 RUNTIME="linux-x64"
 CONFIGURATION="Release"
@@ -20,7 +20,7 @@ APPDIR="$OUTPUT_DIR/AppDir"
 APPIMAGE="$OUTPUT_DIR/${APP_NAME}-x86_64.AppImage"
 
 ICON_SOURCE="Assets/icon-light.png"
-ICON_NAME="ClipX"
+ICON_NAME="XClip"
 
 DESKTOP_FILE="$APPDIR/$ICON_NAME.desktop"
 

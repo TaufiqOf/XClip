@@ -38,7 +38,7 @@ public partial class ClipBoardItem : ViewModelBase
     }
 }
 
-public partial class MainViewModel : ViewModelBase
+public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private string? _lastClipboardText;
     private CancellationTokenSource? _monitorCts;
@@ -333,5 +333,10 @@ public partial class MainViewModel : ViewModelBase
         {
             FilteredHistory[i].DisplayIndex = i + 1;
         }
+    }
+
+    public void Dispose()
+    {
+        StopMonitoringClipboard();
     }
 }

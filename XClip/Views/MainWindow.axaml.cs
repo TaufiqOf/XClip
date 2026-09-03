@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity; // Required for RoutingStrategies
@@ -23,6 +24,7 @@ public partial class MainWindow : Window
         DataContext = new MainViewModel(_hotkeyService);
         InitializeComponent();
         Opened += OnOpened;
+        Closed += OnClosed;
 
         // Use Tunnel routing strategy to catch key presses before ListBox consumes them
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
@@ -221,9 +223,22 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        _inputTimer?.Stop();
+        _inputTimer = null;
+
+        if (DataContext is IDisposable disposableVm)
+        {
+            disposableVm.Dispose();
+        }
+    }
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        if (!_isClosingForReal)
+        bool appIsShuttingDown = (Application.Current as App)?.IsShuttingDown == true;
+
+        if (!_isClosingForReal && !appIsShuttingDown)
         {
             e.Cancel = true;
             HideToTray();
