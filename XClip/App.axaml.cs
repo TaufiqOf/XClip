@@ -1,4 +1,8 @@
 using System;
+using System.IO;
+using System.IO.Pipes;
+using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -13,6 +17,8 @@ namespace XClip;
 
 public partial class App : Application
 {
+    private const string PipeName = "XClip_IPC_Pipe";
+
     private TrayIcon? _trayIcon;
     private GlobalHotkeyService? _hotkeyService;
     private bool _isShuttingDown;
@@ -27,21 +33,46 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Load saved hotkey configuration from disk
-        var settings = SettingsManager.Load();
-
-        _hotkeyService = new GlobalHotkeyService(ToggleMainWindow)
-        {
-            TargetModifiers = settings.Modifiers,
-            TargetKey = settings.Key
-        };
-        _hotkeyService.Start();
-
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow(_hotkeyService);
+            string[] args = desktop.Args ?? Array.Empty<string>();
+            bool isToggleRequested = args.Contains("--toggle-window", StringComparer.OrdinalIgnoreCase);
+
+            // Check if a primary instance is already running
+            if (CanConnectToExistingInstance(isToggleRequested))
+            {
+                // Exit the secondary process immediately before Avalonia starts its MainLoop
+                Environment.Exit(0);
+                return;
+            }
+
+            // --- PRIMARY INSTANCE SETUP ---
+            var settings = SettingsManager.Load();
+
+            _hotkeyService = new GlobalHotkeyService(ToggleMainWindow)
+            {
+                TargetModifiers = settings.Modifiers,
+                TargetKey = settings.Key
+            };
+
+            if (_hotkeyService.IsSupported)
+            {
+                _hotkeyService.Start();
+            }
+
+            var mainWindow = new MainWindow(_hotkeyService);
+            desktop.MainWindow = mainWindow;
+
             desktop.ShutdownRequested += OnShutdownRequested;
             desktop.Exit += OnDesktopExit;
+
+            // Start background IPC server listener
+            _ = StartIpcListenerAsync();
+
+            if (isToggleRequested)
+            {
+                Dispatcher.UIThread.Post(ToggleMainWindow);
+            }
         }
 
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
@@ -53,11 +84,63 @@ public partial class App : Application
             _trayIcon.ToolTipText = "XClip";
         }
 
-        // Apply initial icon matching current theme
         UpdateIcons(ActualThemeVariant);
-
         ActualThemeVariantChanged += OnActualThemeVariantChanged;
+
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static bool CanConnectToExistingInstance(bool isToggleRequested)
+    {
+        try
+        {
+            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
+            client.Connect(150); // Short timeout check
+
+            if (isToggleRequested)
+            {
+                using var writer = new StreamWriter(client);
+                writer.WriteLine("--toggle-window");
+                writer.Flush();
+            }
+
+            return true; // Connection succeeded -> Secondary instance
+        }
+        catch
+        {
+            return false; // Connection failed -> Primary instance
+        }
+    }
+
+
+    private async Task StartIpcListenerAsync()
+    {
+        while (!_isShuttingDown)
+        {
+            try
+            {
+                using var server = new NamedPipeServerStream(
+                    PipeName,
+                    PipeDirection.In,
+                    1,
+                    PipeTransmissionMode.Byte,
+                    PipeOptions.Asynchronous);
+
+                await server.WaitForConnectionAsync();
+
+                using var reader = new StreamReader(server);
+                string? message = await reader.ReadLineAsync();
+
+                if (message == "--toggle-window")
+                {
+                    Dispatcher.UIThread.Post(ToggleMainWindow);
+                }
+            }
+            catch
+            {
+                // Ignore pipe interrupts during application shutdown
+            }
+        }
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
@@ -75,14 +158,12 @@ public partial class App : Application
 
         Dispatcher.UIThread.Post(() =>
         {
-            // Open stream separately for TrayIcon
             if (_trayIcon != null)
             {
                 using var trayStream = AssetLoader.Open(uri);
                 _trayIcon.Icon = new WindowIcon(trayStream);
             }
 
-            // Open fresh stream for MainWindow
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
             {
                 using var windowStream = AssetLoader.Open(uri);
@@ -114,6 +195,7 @@ public partial class App : Application
             {
                 window.ForceExit();
             }
+
             CleanupResources();
             desktop.Shutdown();
         }
