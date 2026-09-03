@@ -18,18 +18,18 @@ It runs in the system tray, keeps your recent copied text items, and lets you qu
 - Toggle app auto-start on login (Windows/Linux/macOS support in code)
 - Minimize-to-tray behavior with tray menu actions
 - Light/dark tray and window icon switching based on theme
+- Limited support for wayland (Linux)
+- Image and Text clipboard supported
 
 ## Screenshots
 
 ### Main window
 
-![XClip main window](Docs/screenshot1.png)
+![XClip main window](Docs/dark-2.png)
 
 ### Theme variants
 
-![XClip dark theme](Docs/dark1.png)
-![XClip light theme 1](Docs/white1.png)
-![ClipboardManagerX light theme 2](Docs/white2.png)
+![XClip light theme](Docs/light-2.png)
 
 ## Tech Stack
 
