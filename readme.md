@@ -87,3 +87,21 @@ Published output is placed under `ClipX/bin/Release/net10.0/` (plus runtime-spec
 - The global hotkey can be changed from the Settings window.
 - Closing the window hides the app to tray; use tray **Exit** to fully quit.
 
+
+
+Important
+
+The commercial licensing option applies only where the copyright holder has the necessary rights to grant such a license.
+
+Third-party libraries and dependencies included in this project may have their own licenses. Those licenses remain applicable and must be followed independently.
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+For details:
+- Local license file: [`LICENSE`](LICENSE)
+- Official GNU text: [GNU GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.en.html)
+
+Repository guidance:
+- Keep the root-level [`LICENSE`](LICENSE) file with the full GPL-3.0 text.
