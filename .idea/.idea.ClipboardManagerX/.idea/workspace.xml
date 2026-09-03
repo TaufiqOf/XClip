@@ -141,7 +141,8 @@
     <MESSAGE value="Update README to reflect project name change from ClipboardManagerX to ClipX" />
     <MESSAGE value="Update .gitignore to include dist/ directory and ensure proper formatting" />
     <MESSAGE value="Remove Windows build script for Quran application" />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove Windows build script for Quran application" />
+    <MESSAGE value="Clear clipboard content on clear action and remove references to ClipboardManagerX in workspace settings" />
+    <option name="LAST_COMMIT_MESSAGE" value="Clear clipboard content on clear action and remove references to ClipboardManagerX in workspace settings" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -158,6 +159,19 @@
           <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
           <option name="timeStamp" value="3" />
         </breakpoint>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/ClipX/ViewModels/MainViewModel.cs</url>
+          <line>224</line>
+          <properties documentPath="$PROJECT_DIR$/ClipX/ViewModels/MainViewModel.cs" containingFunctionPresentation="Method 'ClearClipboardAsync'">
+            <startOffsets>
+              <option value="6422" />
+            </startOffsets>
+            <endOffsets>
+              <option value="6448" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="45" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>

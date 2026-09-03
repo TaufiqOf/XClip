@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace ClipX.ViewModels;
+namespace XClip.ViewModels;
 
 public abstract class ViewModelBase : ObservableObject
 {

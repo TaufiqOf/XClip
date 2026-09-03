@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XClip.ViewModels"
+        xmlns:avalonia="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+        x:Class="XClip.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Width="400" Height="250"
+        WindowStartupLocation="CenterOwner"
+        Title="Settings"
+        CanResize="False">
+
+    <Grid Margin="16" RowDefinitions="*,Auto">
+        <StackPanel Grid.Row="0" Spacing="16">
+            <TextBlock Text="Global Shortcut" FontSize="16" FontWeight="SemiBold" />
+            
+            <StackPanel Spacing="8">
+                <TextBlock Text="Press a key combination to show the application window:" 
+                           Foreground="#888888" FontSize="12" TextWrapping="Wrap" />
+
+                <!-- Hotkey Recorder Box -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBox x:Name="HotkeyTextBox"
+                             Grid.Column="0"
+                             IsReadOnly="True"
+                             Text="{Binding HotkeyDisplay, Mode=OneWay}"
+                             Watermark="Click here and press shortcut..."
+                             KeyDown="HotkeyTextBox_OnKeyDown" />
+
+                    <Button Grid.Column="1"
+                            Margin="8,0,0,0"
+                            Command="{Binding ClearHotkeyCommand}"
+                            ToolTip.Tip="Reset to default">
+                        <avalonia:FluentIcon Icon="Dismiss" FontSize="14" />
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Save/Cancel Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+            <Button Content="Cancel" Click="OnCancelClick" IsCancel="True" />
+            <Button Content="Save" Command="{Binding SaveCommand}" Click="OnSaveClick" IsDefault="True" Classes="accent" />
+        </StackPanel>
+    </Grid>
+</Window>

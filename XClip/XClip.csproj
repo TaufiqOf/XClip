@@ -24,5 +24,7 @@
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <PackageReference Include="FluentIcons.Avalonia" Version="2.1.339.1" />
         <PackageReference Include="FluentIcons.Avalonia.Fluent" Version="2.1.339.1" />
+        <PackageReference Include="FuzzySharp" Version="2.0.2" />
+        <PackageReference Include="SharpHook" Version="8.0.0" />
     </ItemGroup>
 </Project>

@@ -6,13 +6,15 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Threading;
-using ClipX.Views;
+using XClip.Services;
+using XClip.Views;
 
-namespace ClipX;
+namespace XClip;
 
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
+    private GlobalHotkeyService _hotkeyService = null!;
 
     public override void Initialize()
     {
@@ -21,16 +23,26 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // Load saved hotkey configuration from disk
+        var settings = SettingsManager.Load();
+
+        _hotkeyService = new GlobalHotkeyService(ToggleMainWindow)
+        {
+            TargetModifiers = settings.Modifiers,
+            TargetKey = settings.Key
+        };
+        _hotkeyService.Start();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow();
+            desktop.MainWindow = new MainWindow(_hotkeyService);
         }
 
         var trayIcons = TrayIcon.GetIcons(this);
         if (trayIcons != null && trayIcons.Count > 0)
         {
             _trayIcon = trayIcons[0];
-            _trayIcon.ToolTipText = "ClipX";
+            _trayIcon.ToolTipText = "XClip";
         }
 
         // Apply initial icon matching current theme
@@ -48,8 +60,8 @@ public partial class App : Application
     private void UpdateIcons(ThemeVariant theme)
     {
         string assetUri = theme == ThemeVariant.Dark
-            ? "avares://ClipX/Assets/icon-dark.ico"
-            : "avares://ClipX/Assets/icon-light.ico";
+            ? "avares://XClip/Assets/icon-dark.ico"
+            : "avares://XClip/Assets/icon-light.ico";
 
         var uri = new Uri(assetUri);
 
@@ -93,7 +105,7 @@ public partial class App : Application
             {
                 window.ForceExit();
             }
-
+            _hotkeyService?.Dispose(); // Cleanup hook on exit
             desktop.Shutdown();
         }
     }

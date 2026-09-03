@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipX", "ClipX\ClipX.csproj", "{BE97FEEF-63F2-4243-84DF-C9D28C0DBA94}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XClip", "XClip\XClip.csproj", "{BE97FEEF-63F2-4243-84DF-C9D28C0DBA94}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

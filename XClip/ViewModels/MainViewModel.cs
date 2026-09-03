@@ -9,8 +9,11 @@ using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FuzzySharp;
+using XClip.Services;
+using XClip.Views;
 
-namespace ClipX.ViewModels;
+namespace XClip.ViewModels;
 
 public enum ClipBoardDataFormat
 {
@@ -26,6 +29,7 @@ public partial class ClipBoardItem : ViewModelBase
     [ObservableProperty] private ClipBoardDataFormat _format = ClipBoardDataFormat.Text;
     [ObservableProperty] private string _text = string.Empty;
     [ObservableProperty] private DateTime _timestamp = DateTime.Now;
+    [ObservableProperty] private int _displayIndex;
 
     [RelayCommand]
     private void Delete()
@@ -42,6 +46,19 @@ public partial class MainViewModel : ViewModelBase
     private bool _isAutoStartEnabled;
     private bool _isMonitoringClipboard = true;
     private bool _isInternalSelectionChange;
+    private string _searchText = string.Empty;
+
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            if (SetProperty(ref _searchText, value))
+            {
+                ApplyFilter();
+            }
+        }
+    }
 
     public bool IsAutoStartEnabled
     {
@@ -78,7 +95,6 @@ public partial class MainViewModel : ViewModelBase
             if (!SetProperty(ref _selectedItem, value) || value == null)
                 return;
 
-            // Prevent writing to clipboard when selection changed due to incoming clipboard update
             if (_isInternalSelectionChange)
                 return;
 
@@ -88,9 +104,13 @@ public partial class MainViewModel : ViewModelBase
     }
 
     public ObservableCollection<ClipBoardItem> ClipboardHistory { get; } = new();
+    public ObservableCollection<ClipBoardItem> FilteredHistory { get; } = new();
 
-    public MainViewModel()
+    private readonly GlobalHotkeyService? _hotkeyService;
+
+    public MainViewModel(GlobalHotkeyService hotkeyService)
     {
+        _hotkeyService = hotkeyService;
         IsAutoStartEnabled = AutoStartManager.IsEnabled();
         StartMonitoringClipboard();
     }
@@ -100,6 +120,7 @@ public partial class MainViewModel : ViewModelBase
     {
         ClipboardHistory.Clear();
         SelectedItem = null;
+        UpdateIndexesAndFilter();
     }
 
     private IClipboard? GetClipboard()
@@ -141,7 +162,6 @@ public partial class MainViewModel : ViewModelBase
 
         while (!cancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync(cancellationToken))
         {
-            // Always query the clipboard on the UI thread
             await Dispatcher.UIThread.InvokeAsync(async () =>
             {
                 var clipboard = GetClipboard();
@@ -159,7 +179,6 @@ public partial class MainViewModel : ViewModelBase
 
                         if (existingItem != null)
                         {
-                            // Move existing item to top
                             ClipboardHistory.Remove(existingItem);
                             ClipboardHistory.Insert(0, existingItem);
 
@@ -169,7 +188,6 @@ public partial class MainViewModel : ViewModelBase
                         }
                         else
                         {
-                            // Add new item to top
                             var newItem = new ClipBoardItem
                             {
                                 Text = text,
@@ -184,6 +202,8 @@ public partial class MainViewModel : ViewModelBase
                             SelectedItem = newItem;
                             _isInternalSelectionChange = false;
                         }
+
+                        UpdateIndexesAndFilter();
                     }
                 }
                 catch
@@ -201,12 +221,14 @@ public partial class MainViewModel : ViewModelBase
 
         if (SelectedItem == obj)
         {
-            SelectedItem = ClipboardHistory.FirstOrDefault();
+            SelectedItem = FilteredHistory.FirstOrDefault();
         }
+
+        UpdateIndexesAndFilter();
     }
 
     [RelayCommand]
-    private async Task CopyAsync(ClipBoardItem? item)
+    public async Task CopyAsync(ClipBoardItem? item)
     {
         var targetItem = item ?? SelectedItem;
         if (targetItem == null) return;
@@ -233,6 +255,83 @@ public partial class MainViewModel : ViewModelBase
         {
             await clipboard.ClearAsync();
             await clipboard.SetTextAsync("");
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenSettingsAsync()
+    {
+        if (_hotkeyService == null)
+            return;
+
+        var settingsVm = new SettingsViewModel(_hotkeyService);
+        var settingsWindow = new SettingsWindow { DataContext = settingsVm };
+
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            if (desktop?.MainWindow != null)
+            {
+                await settingsWindow.ShowDialog(desktop.MainWindow);
+            }
+        }
+    }
+
+    public void SelectAndPasteByIndex(int index)
+    {
+        if (index >= 0 && index < FilteredHistory.Count)
+        {
+            SelectedItem = FilteredHistory[index];
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        FilteredHistory.Clear();
+
+        if (string.IsNullOrWhiteSpace(SearchText))
+        {
+            foreach (var item in ClipboardHistory)
+            {
+                FilteredHistory.Add(item);
+            }
+        }
+        else
+        {
+            // Fuzzy search and sort by match ratio above 40% threshold
+            var matches = ClipboardHistory
+                .Select(item => new
+                {
+                    Item = item,
+                    Score = Fuzz.PartialRatio(SearchText.ToLower(), item.Text.ToLower())
+                })
+                .Where(x => x.Score > 40)
+                .OrderByDescending(x => x.Score)
+                .Select(x => x.Item);
+
+            foreach (var item in matches)
+            {
+                FilteredHistory.Add(item);
+            }
+        }
+
+        UpdateIndexes();
+        
+        // Auto select first match if present
+        _isInternalSelectionChange = true;
+        SelectedItem = FilteredHistory.FirstOrDefault();
+        _isInternalSelectionChange = false;
+    }
+
+    private void UpdateIndexesAndFilter()
+    {
+        ApplyFilter();
+    }
+
+    private void UpdateIndexes()
+    {
+        for (int i = 0; i < FilteredHistory.Count; i++)
+        {
+            FilteredHistory[i].DisplayIndex = i + 1;
         }
     }
 }

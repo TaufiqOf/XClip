@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace ClipX;
+namespace XClip;
 
 sealed class Program
 {

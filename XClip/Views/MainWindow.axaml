@@ -1,0 +1,135 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:XClip.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:avalonia="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+        xmlns:converters="clr-namespace:XClip.Converters"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="XClip.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Width="450" Height="600"
+        WindowStartupLocation="Manual"
+        Icon="avares://XClip/Assets/icon-dark.ico"
+        Title="XClip">
+
+    <Window.Resources>
+        <converters:TruncateConverter x:Key="Truncate500Converter" MaxLength="300" />
+    </Window.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        <!-- Toolbar Bar -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="8,8,8,4">
+            <!-- Left Aligned Controls -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
+                <Button Command="{Binding ClearClipboardCommand}" ToolTip.Tip="Clear Clipboard">
+                    <avalonia:FluentIcon Icon="ClipboardChatEmpty" FontSize="16" />
+                </Button>
+                <Button Command="{Binding ClearHistoryCommand}" ToolTip.Tip="Clear Clipboard History">
+                    <avalonia:FluentIcon Icon="Delete" FontSize="16" />
+                </Button>
+
+                <!-- Auto Start Toggle -->
+                <ToggleButton IsChecked="{Binding IsAutoStartEnabled}"
+                              ToolTip.Tip="Toggle Auto Start">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <avalonia:FluentIcon Icon="Play" FontSize="16" />
+                    </StackPanel>
+                </ToggleButton>
+
+                <!-- Monitor Clipboard Toggle -->
+                <ToggleButton IsChecked="{Binding IsMonitoringClipboard}"
+                              ToolTip.Tip="Toggle Clipboard Monitoring">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <avalonia:FluentIcon Icon="Eye" FontSize="16" />
+                    </StackPanel>
+                </ToggleButton>
+            </StackPanel>
+
+            <!-- Right Aligned Settings Button -->
+            <Button Grid.Column="1"
+                    HorizontalAlignment="Right"
+                    Command="{Binding OpenSettingsCommand}"
+                    ToolTip.Tip="Settings">
+                <avalonia:FluentIcon Icon="Settings" FontSize="16" />
+            </Button>
+        </Grid>
+
+        <!-- Search Input Box -->
+        <Grid Grid.Row="1" Margin="8,4">
+            <TextBox x:Name="SearchTextBox"
+                     Text="{Binding SearchText, Mode=TwoWay}"
+                     Watermark="Search history (Ctrl+S)..." />
+        </Grid>
+
+        <!-- Clipboard List -->
+        <Grid Grid.Row="2" Margin="8,4,8,8">
+            <ListBox
+                x:Name="ListBox"
+                ItemsSource="{Binding FilteredHistory}"
+                SelectionMode="Single"
+                SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
+
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem" x:DataType="vm:ClipBoardItem">
+                        <Setter Property="ToolTip.Tip"
+                                Value="{Binding Text, Converter={StaticResource Truncate500Converter}}" />
+                    </Style>
+                </ListBox.Styles>
+
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ClipBoardItem">
+                        <Border Padding="8,6" CornerRadius="4">
+                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+
+                                <!-- Index Badge (1, 2, 3...) -->
+                                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                                        Background="#2D2D2D"
+                                        CornerRadius="4"
+                                        Width="22" Height="22"
+                                        Margin="0,0,10,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DisplayIndex}"
+                                               FontSize="12"
+                                               FontWeight="Bold"
+                                               Foreground="#AAAAAA"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+
+                                <!-- Text Preview -->
+                                <TextBlock Grid.Row="0" Grid.Column="1"
+                                           Text="{Binding Text}"
+                                           FontSize="14"
+                                           TextWrapping="Wrap"
+                                           MaxLines="2"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+
+                                <!-- Inline Delete Button -->
+                                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="2"
+                                        Command="{Binding DeleteCommand}"
+                                        CommandParameter="{Binding}"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Padding="6"
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center"
+                                        ToolTip.Tip="Delete this item">
+                                    <avalonia:FluentIcon Icon="Delete" FontSize="14" />
+                                </Button>
+
+                                <!-- Timestamp -->
+                                <TextBlock Grid.Row="1" Grid.Column="1"
+                                           Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}"
+                                           FontSize="11"
+                                           Foreground="#888888"
+                                           Margin="0,4,0,0" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+    </Grid>
+</Window>
