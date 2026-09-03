@@ -12,14 +12,26 @@ public static class AutoStartManager
     private static readonly string? FlatpakId = Environment.GetEnvironmentVariable("FLATPAK_ID");
     public static bool IsFlatpak => !string.IsNullOrEmpty(FlatpakId);
 
+    private static string LinuxAutostartDir => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        ".config", "autostart");
+
+    private static string LinuxDesktopFilePath
+    {
+        get
+        {
+            string fileName = IsFlatpak && !string.IsNullOrWhiteSpace(FlatpakId)
+                ? $"{FlatpakId}.desktop"
+                : $"{AppName}.desktop";
+            return Path.Combine(LinuxAutostartDir, fileName);
+        }
+    }
+
     public static bool IsEnabled()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            string desktopFile = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".config", "autostart", $"{FlatpakId ?? AppName}.desktop");
-            return File.Exists(desktopFile);
+            return File.Exists(LinuxDesktopFilePath);
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -43,28 +55,22 @@ public static class AutoStartManager
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            // Point to real host path if running in Flatpak
-            string autostartDir = IsFlatpak 
-                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "autostart")
-                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "autostart");
-
-            string fileName = IsFlatpak ? $"{FlatpakId}.desktop" : $"{AppName}.desktop";
-            string desktopFile = Path.Combine(autostartDir, fileName);
+            string desktopFile = LinuxDesktopFilePath;
 
             if (enable)
             {
-                Directory.CreateDirectory(autostartDir);
-                
-                // Use 'flatpak run <AppID>' for Flatpak executions
-                string execLine = IsFlatpak 
-                    ? $"Exec=flatpak run {FlatpakId} --autostart"
-                    : $"Exec=\"{Process.GetCurrentProcess().MainModule?.FileName}\" --autostart";
+                if (!TryGetLinuxExecCommand(out var execCommand))
+                {
+                    return;
+                }
+
+                Directory.CreateDirectory(LinuxAutostartDir);
 
                 string content = $"""
                                   [Desktop Entry]
                                   Type=Application
                                   Name={AppName}
-                                  {execLine}
+                                  Exec={execCommand}
                                   Terminal=false
                                   X-GNOME-Autostart-enabled=true
                                   """;
@@ -124,5 +130,36 @@ public static class AutoStartManager
                 File.Delete(plistFile);
             }
         }
+    }
+
+    private static bool TryGetLinuxExecCommand(out string execCommand)
+    {
+        if (IsFlatpak && !string.IsNullOrWhiteSpace(FlatpakId))
+        {
+            execCommand = $"flatpak run {FlatpakId} --autostart";
+            return true;
+        }
+
+        string? appImagePath = Environment.GetEnvironmentVariable("APPIMAGE");
+        if (!string.IsNullOrWhiteSpace(appImagePath) && File.Exists(appImagePath))
+        {
+            execCommand = $"\"{EscapeDesktopExecArg(appImagePath)}\" --autostart";
+            return true;
+        }
+
+        string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
+        if (!string.IsNullOrWhiteSpace(exePath))
+        {
+            execCommand = $"\"{EscapeDesktopExecArg(exePath)}\" --autostart";
+            return true;
+        }
+
+        execCommand = string.Empty;
+        return false;
+    }
+
+    private static string EscapeDesktopExecArg(string value)
+    {
+        return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
     }
 }

@@ -129,7 +129,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
             desktop.MainWindow is MainWindow window)
         {
-            if (window.IsVisible)
+            if (window is { IsVisible: true, IsActive: true })
                 window.HideToTray();
             else
                 window.ShowFromTray();
