@@ -50,7 +50,7 @@ It runs in the system tray, keeps your recent copied text items, and lets you qu
 From the repository root:
 
 ```bash
-cd ClipX
+cd XClip
 dotnet restore
 dotnet run
 ```
@@ -58,11 +58,11 @@ dotnet run
 ## Build (Release)
 
 ```bash
-cd ClipX
+cd XClip
 dotnet publish -c Release -f net10.0
 ```
 
-Published output is placed under `ClipX/bin/Release/net10.0/` (plus runtime-specific folders if you publish with `-r`).
+Published output is placed under `XClip/bin/Release/net10.0/` (plus runtime-specific folders if you publish with `-r`).
 
 ## Keyboard Shortcuts
 
