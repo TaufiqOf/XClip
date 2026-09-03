@@ -15,6 +15,7 @@
 
     <Window.Resources>
         <converters:TruncateConverter x:Key="Truncate500Converter" MaxLength="300" />
+        <converters:IsImageFormatConverter x:Key="IsImageFormatConverter" />
     </Window.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*">
@@ -68,7 +69,8 @@
                 x:Name="ListBox"
                 ItemsSource="{Binding FilteredHistory}"
                 SelectionMode="Single"
-                SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
+                SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                DoubleTapped="OnListBoxDoubleTapped">
 
                 <ListBox.Styles>
                     <Style Selector="ListBoxItem" x:DataType="vm:ClipBoardItem">
@@ -80,9 +82,9 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="vm:ClipBoardItem">
                         <Border Padding="8,6" CornerRadius="4">
-                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" RowDefinitions="Auto,Auto">
 
-                                <!-- Index Badge (1, 2, 3...) -->
+                                <!-- Index Badge (Column 0) -->
                                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
                                         Background="#2D2D2D"
                                         CornerRadius="4"
@@ -97,17 +99,37 @@
                                                VerticalAlignment="Center" />
                                 </Border>
 
-                                <!-- Text Preview -->
-                                <TextBlock Grid.Row="0" Grid.Column="1"
+                                <!-- Image Preview (Column 1 - Only visible for images) -->
+                                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                        Width="72" Height="48"
+                                        Margin="0,0,10,0"
+                                        CornerRadius="4"
+                                        ClipToBounds="True"
+                                        IsVisible="{Binding Format, Converter={StaticResource IsImageFormatConverter}}"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Left">
+                                    <Image Source="{Binding ImageData}" Stretch="UniformToFill" />
+                                </Border>
+
+                                <!-- Text Preview (Column 2 - Always Visible) -->
+                                <TextBlock Grid.Row="0" Grid.Column="2"
                                            Text="{Binding Text}"
                                            FontSize="14"
                                            TextWrapping="Wrap"
                                            MaxLines="2"
                                            TextTrimming="CharacterEllipsis"
-                                           VerticalAlignment="Center" />
+                                           VerticalAlignment="Center"
+                                           Margin="0" />
 
-                                <!-- Inline Delete Button -->
-                                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="2"
+                                <!-- Timestamp (Column 2 - Always Visible) -->
+                                <TextBlock Grid.Row="1" Grid.Column="2"
+                                           Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}"
+                                           FontSize="11"
+                                           Foreground="#888888"
+                                           Margin="0,4,0,0" />
+
+                                <!-- Inline Delete Button (Column 3) -->
+                                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
                                         Command="{Binding DeleteCommand}"
                                         CommandParameter="{Binding}"
                                         Background="Transparent"
@@ -119,12 +141,6 @@
                                     <avalonia:FluentIcon Icon="Delete" FontSize="14" />
                                 </Button>
 
-                                <!-- Timestamp -->
-                                <TextBlock Grid.Row="1" Grid.Column="1"
-                                           Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}"
-                                           FontSize="11"
-                                           Foreground="#888888"
-                                           Margin="0,4,0,0" />
                             </Grid>
                         </Border>
                     </DataTemplate>

@@ -61,9 +61,7 @@ public partial class MainWindow : Window
                 if (vm.SelectedItem != null)
                 {
                     e.Handled = true;
-                    HideToTray();
-                    await vm.CopyAsync(vm.SelectedItem);
-                    await _hotkeyService.SimulatePasteAsync();
+                    await ExecutePasteForSelectedAsync(vm);
                 }
             }
             else if (e.Key == Key.Escape)
@@ -72,6 +70,22 @@ public partial class MainWindow : Window
                 HideToTray();
             }
         }
+    }
+
+    private async void OnListBoxDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm && vm.SelectedItem != null)
+        {
+            e.Handled = true;
+            await ExecutePasteForSelectedAsync(vm);
+        }
+    }
+
+    private async Task ExecutePasteForSelectedAsync(MainViewModel vm)
+    {
+        HideToTray();
+        await vm.CopyAsync(vm.SelectedItem);
+        await _hotkeyService.SimulatePasteAsync();
     }
 
     private async Task ProcessBufferSelectionAsync(MainViewModel vm)

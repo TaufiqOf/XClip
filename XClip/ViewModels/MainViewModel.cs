@@ -1,11 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -30,6 +33,8 @@ public partial class ClipBoardItem : ViewModelBase
     [ObservableProperty] private string _text = string.Empty;
     [ObservableProperty] private DateTime _timestamp = DateTime.Now;
     [ObservableProperty] private int _displayIndex;
+    [ObservableProperty] private string _signature = string.Empty;
+    [ObservableProperty] private Bitmap? _imageData;
 
     [RelayCommand]
     private void Delete()
@@ -41,6 +46,10 @@ public partial class ClipBoardItem : ViewModelBase
 public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private string? _lastClipboardText;
+    private string? _lastClipboardSignature;
+    private string? _lastImageMetaSignature;
+    private DateTime _lastImageHashCheckUtc = DateTime.MinValue;
+    private static readonly TimeSpan ImageHashRecheckInterval = TimeSpan.FromSeconds(10);
     private CancellationTokenSource? _monitorCts;
     private ClipBoardItem? _selectedItem;
     private bool _isAutoStartEnabled;
@@ -99,7 +108,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 return;
 
             _lastClipboardText = value.Text;
-            _ = SetClipboardTextAsync(value.Text);
+            _lastClipboardSignature = value.Signature;
+            _ = SetClipboardItemAsync(value);
         }
     }
 
@@ -142,6 +152,87 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private async Task SetClipboardItemAsync(ClipBoardItem item)
+    {
+        var clipboard = GetClipboard();
+        if (clipboard == null)
+            return;
+
+        if (item.Format == ClipBoardDataFormat.Image && item.ImageData != null)
+        {
+            await clipboard.SetBitmapAsync(item.ImageData);
+            return;
+        }
+
+        await clipboard.SetTextAsync(item.Text);
+    }
+
+    private static string ComputeImageSignature(Bitmap bitmap)
+    {
+        using var stream = new MemoryStream();
+        bitmap.Save(stream, PngBitmapEncoderOptions.Default);
+        stream.Position = 0;
+        var hash = SHA256.HashData(stream);
+        return $"image:{Convert.ToHexString(hash)}";
+    }
+
+    private bool ShouldSkipImageHash(Bitmap bitmap)
+    {
+        var metaSignature = $"{bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}:{bitmap.Dpi.X:F2}:{bitmap.Dpi.Y:F2}";
+        var isSameMeta = string.Equals(metaSignature, _lastImageMetaSignature, StringComparison.Ordinal);
+        var isRecent = DateTime.UtcNow - _lastImageHashCheckUtc < ImageHashRecheckInterval;
+
+        if (isSameMeta && isRecent && _lastClipboardSignature?.StartsWith("image:", StringComparison.Ordinal) == true)
+        {
+            return true;
+        }
+
+        _lastImageMetaSignature = metaSignature;
+        _lastImageHashCheckUtc = DateTime.UtcNow;
+        return false;
+    }
+
+    private void UpsertClipboardItem(string signature, string text, ClipBoardDataFormat format, Bitmap? imageData = null)
+    {
+        if (signature == _lastClipboardSignature)
+        {
+            return;
+        }
+
+        _lastClipboardSignature = signature;
+        _lastClipboardText = text;
+
+        var existingItem = ClipboardHistory.FirstOrDefault(i => i.Signature == signature);
+
+        if (existingItem != null)
+        {
+            ClipboardHistory.Remove(existingItem);
+            ClipboardHistory.Insert(0, existingItem);
+
+            _isInternalSelectionChange = true;
+            SelectedItem = existingItem;
+            _isInternalSelectionChange = false;
+            return;
+        }
+
+        var newItem = new ClipBoardItem
+        {
+            Text = text,
+            Format = format,
+            Timestamp = DateTime.Now,
+            DisplayIndex = ClipboardHistory.Count + 1,
+            Signature = signature,
+            ImageData = imageData
+        };
+        newItem.OnDelete += OnDelete;
+
+        ClipboardHistory.Insert(0, newItem);
+
+        _isInternalSelectionChange = true;
+        SelectedItem = newItem;
+        _isInternalSelectionChange = false;
+    }
+
     private void StartMonitoringClipboard()
     {
         StopMonitoringClipboard();
@@ -171,38 +262,33 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 {
                     string? text = await clipboard.TryGetTextAsync();
 
-                    if (!string.IsNullOrWhiteSpace(text) && text != _lastClipboardText)
+                    if (!string.IsNullOrWhiteSpace(text))
                     {
-                        _lastClipboardText = text;
-
-                        var existingItem = ClipboardHistory.FirstOrDefault(i => i.Text == text);
-
-                        if (existingItem != null)
+                        var textSignature = $"text:{text}";
+                        if (textSignature == _lastClipboardSignature)
                         {
-                            ClipboardHistory.Remove(existingItem);
-                            ClipboardHistory.Insert(0, existingItem);
-
-                            _isInternalSelectionChange = true;
-                            SelectedItem = existingItem;
-                            _isInternalSelectionChange = false;
+                            return;
                         }
-                        else
+                        UpsertClipboardItem(textSignature, text, ClipBoardDataFormat.Text);
+                        UpdateIndexesAndFilter();
+                        return;
+                    }
+
+                    var bitmap = await clipboard.TryGetBitmapAsync();
+                    if (bitmap != null)
+                    {
+                        if (ShouldSkipImageHash(bitmap))
                         {
-                            var newItem = new ClipBoardItem
-                            {
-                                Text = text,
-                                Format = ClipBoardDataFormat.Text,
-                                Timestamp = DateTime.Now
-                            };
-                            newItem.OnDelete += OnDelete;
-
-                            ClipboardHistory.Insert(0, newItem);
-
-                            _isInternalSelectionChange = true;
-                            SelectedItem = newItem;
-                            _isInternalSelectionChange = false;
+                            return;
                         }
 
+                        var imageSignature = ComputeImageSignature(bitmap);
+                        var imageLabel = $"[Image] {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}";
+                        if (imageSignature == _lastClipboardSignature)
+                        {
+                            return;
+                        }
+                        UpsertClipboardItem(imageSignature, imageLabel, ClipBoardDataFormat.Image, bitmap);
                         UpdateIndexesAndFilter();
                     }
                 }
@@ -234,7 +320,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         if (targetItem == null) return;
 
         _lastClipboardText = targetItem.Text;
-        await SetClipboardTextAsync(targetItem.Text);
+        _lastClipboardSignature = targetItem.Signature;
+        await SetClipboardItemAsync(targetItem);
 
         _isInternalSelectionChange = true;
         SelectedItem = targetItem;
@@ -245,6 +332,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private async Task ClearClipboardAsync()
     {
         _lastClipboardText = null;
+        _lastClipboardSignature = null;
+        _lastImageMetaSignature = null;
+        _lastImageHashCheckUtc = DateTime.MinValue;
 
         _isInternalSelectionChange = true;
         SelectedItem = null;
@@ -315,7 +405,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
 
         UpdateIndexes();
-        
+
         // Auto select first match if present
         _isInternalSelectionChange = true;
         SelectedItem = FilteredHistory.FirstOrDefault();
@@ -329,10 +419,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     private void UpdateIndexes()
     {
-        for (int i = 0; i < FilteredHistory.Count; i++)
+        var i = 1;
+        foreach (var clipBoardItem in FilteredHistory.OrderBy(q => q.Timestamp).ToList())
         {
-            FilteredHistory[i].DisplayIndex = i + 1;
+            clipBoardItem.DisplayIndex = i++;
         }
+
     }
 
     public void Dispose()
