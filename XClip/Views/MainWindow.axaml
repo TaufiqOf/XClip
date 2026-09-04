@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:avalonia="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
         xmlns:converters="clr-namespace:XClip.Converters"
+        xmlns:models="clr-namespace:XClip.Models"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="XClip.Views.MainWindow"
         x:DataType="vm:MainViewModel"
@@ -60,7 +61,7 @@
         <Grid Grid.Row="1" Margin="8,4">
             <TextBox x:Name="SearchTextBox"
                      Text="{Binding SearchText, Mode=TwoWay}"
-                     Watermark="Search history (Ctrl+S)..." />
+                     PlaceholderText="Search history (Ctrl+S)..." />
         </Grid>
 
         <!-- Clipboard List -->
@@ -73,14 +74,14 @@
                 DoubleTapped="OnListBoxDoubleTapped">
 
                 <ListBox.Styles>
-                    <Style Selector="ListBoxItem" x:DataType="vm:ClipBoardItem">
+                    <Style Selector="ListBoxItem" x:DataType="models:ClipBoardItem">
                         <Setter Property="ToolTip.Tip"
                                 Value="{Binding Text, Converter={StaticResource Truncate500Converter}}" />
                     </Style>
                 </ListBox.Styles>
 
                 <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ClipBoardItem">
+                    <DataTemplate x:DataType="models:ClipBoardItem">
                         <Border Padding="8,6" CornerRadius="4">
                             <Grid ColumnDefinitions="Auto,Auto,*,Auto" RowDefinitions="Auto,Auto">
 

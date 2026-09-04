@@ -10,72 +10,51 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FuzzySharp;
+using XClip.Models;
 using XClip.Services;
 using XClip.Views;
 
 namespace XClip.ViewModels;
 
-public enum ClipBoardDataFormat
-{
-    Text,
-    Image,
-    File,
-    Other
-}
-
-public partial class ClipBoardItem : ViewModelBase
-{
-    public Action<ClipBoardItem>? OnDelete { get; set; }
-    [ObservableProperty] private ClipBoardDataFormat _format = ClipBoardDataFormat.Text;
-    [ObservableProperty] private string _text = string.Empty;
-    [ObservableProperty] private DateTime _timestamp = DateTime.Now;
-    [ObservableProperty] private int _displayIndex;
-    [ObservableProperty] private string _signature = string.Empty;
-    [ObservableProperty] private Bitmap? _imageData;
-
-    [RelayCommand]
-    private void Delete()
-    {
-        OnDelete?.Invoke(this);
-    }
-}
-
 public partial class MainViewModel : ViewModelBase, IDisposable
 {
-    private string? _lastClipboardText;
-    private string? _lastClipboardSignature;
-    private string? _lastImageMetaSignature;
-    private DateTime _lastImageHashCheckUtc = DateTime.MinValue;
     private static readonly TimeSpan ImageHashRecheckInterval = TimeSpan.FromSeconds(10);
-    private CancellationTokenSource? _monitorCts;
-    private ClipBoardItem? _selectedItem;
-    private bool _isAutoStartEnabled;
-    private bool _isMonitoringClipboard = true;
+
+    private readonly GlobalHotkeyService? _hotkeyService;
     private bool _isInternalSelectionChange;
+    private bool _isMonitoringClipboard = true;
+    private string? _lastClipboardSignature;
+    private string? _lastClipboardText;
+    private DateTime _lastImageHashCheckUtc = DateTime.MinValue;
+    private string? _lastImageMetaSignature;
+    private CancellationTokenSource? _monitorCts;
     private string _searchText = string.Empty;
+
+    public MainViewModel(GlobalHotkeyService hotkeyService)
+    {
+        _hotkeyService = hotkeyService;
+        IsAutoStartEnabled = AutoStartManager.IsEnabled();
+        StartMonitoringClipboard();
+    }
 
     public string SearchText
     {
         get => _searchText;
         set
         {
-            if (SetProperty(ref _searchText, value))
-            {
-                ApplyFilter();
-            }
+            if (SetProperty(ref _searchText, value)) ApplyFilter();
         }
     }
 
     public bool IsAutoStartEnabled
     {
-        get => _isAutoStartEnabled;
+        get;
         set
         {
             AutoStartManager.SetEnabled(value);
-            SetProperty(ref _isAutoStartEnabled, value);
+            SetProperty(ref field, value);
         }
     }
 
@@ -86,22 +65,18 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         {
             SetProperty(ref _isMonitoringClipboard, value);
             if (value)
-            {
                 StartMonitoringClipboard();
-            }
             else
-            {
                 StopMonitoringClipboard();
-            }
         }
     }
 
-    public ClipBoardItem? SelectedItem
+    public Models.ClipBoardItem? SelectedItem
     {
-        get => _selectedItem;
+        get;
         set
         {
-            if (!SetProperty(ref _selectedItem, value) || value == null)
+            if (!SetProperty(ref field, value) || value == null)
                 return;
 
             if (_isInternalSelectionChange)
@@ -113,16 +88,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public ObservableCollection<ClipBoardItem> ClipboardHistory { get; } = new();
-    public ObservableCollection<ClipBoardItem> FilteredHistory { get; } = new();
+    public ObservableCollection<Models.ClipBoardItem> ClipboardHistory { get; } = new();
+    public ObservableCollection<Models.ClipBoardItem> FilteredHistory { get; } = new();
 
-    private readonly GlobalHotkeyService? _hotkeyService;
-
-    public MainViewModel(GlobalHotkeyService hotkeyService)
+    public void Dispose()
     {
-        _hotkeyService = hotkeyService;
-        IsAutoStartEnabled = AutoStartManager.IsEnabled();
-        StartMonitoringClipboard();
+        StopMonitoringClipboard();
     }
 
     [RelayCommand]
@@ -136,9 +107,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private IClipboard? GetClipboard()
     {
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
             return desktop.MainWindow?.Clipboard;
-        }
 
         return null;
     }
@@ -146,13 +115,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private async Task SetClipboardTextAsync(string text)
     {
         var clipboard = GetClipboard();
-        if (clipboard != null)
-        {
-            await clipboard.SetTextAsync(text);
-        }
+        if (clipboard != null) await clipboard.SetTextAsync(text);
     }
 
-    private async Task SetClipboardItemAsync(ClipBoardItem item)
+    private async Task SetClipboardItemAsync(Models.ClipBoardItem item)
     {
         var clipboard = GetClipboard();
         if (clipboard == null)
@@ -182,22 +148,18 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         var isSameMeta = string.Equals(metaSignature, _lastImageMetaSignature, StringComparison.Ordinal);
         var isRecent = DateTime.UtcNow - _lastImageHashCheckUtc < ImageHashRecheckInterval;
 
-        if (isSameMeta && isRecent && _lastClipboardSignature?.StartsWith("image:", StringComparison.Ordinal) == true)
-        {
-            return true;
-        }
+        if (isSameMeta && isRecent &&
+            _lastClipboardSignature?.StartsWith("image:", StringComparison.Ordinal) == true) return true;
 
         _lastImageMetaSignature = metaSignature;
         _lastImageHashCheckUtc = DateTime.UtcNow;
         return false;
     }
 
-    private void UpsertClipboardItem(string signature, string text, ClipBoardDataFormat format, Bitmap? imageData = null)
+    private void UpsertClipboardItem(string signature, string text, ClipBoardDataFormat format,
+        Bitmap? imageData = null)
     {
-        if (signature == _lastClipboardSignature)
-        {
-            return;
-        }
+        if (signature == _lastClipboardSignature) return;
 
         _lastClipboardSignature = signature;
         _lastClipboardText = text;
@@ -215,7 +177,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        var newItem = new ClipBoardItem
+        var newItem = new Models.ClipBoardItem
         {
             Text = text,
             Format = format,
@@ -252,7 +214,6 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
 
         while (!cancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync(cancellationToken))
-        {
             await Dispatcher.UIThread.InvokeAsync(async () =>
             {
                 var clipboard = GetClipboard();
@@ -260,15 +221,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
                 try
                 {
-                    string? text = await clipboard.TryGetTextAsync();
+                    var text = await clipboard.TryGetTextAsync();
 
                     if (!string.IsNullOrWhiteSpace(text))
                     {
                         var textSignature = $"text:{text}";
-                        if (textSignature == _lastClipboardSignature)
-                        {
-                            return;
-                        }
+                        if (textSignature == _lastClipboardSignature) return;
                         UpsertClipboardItem(textSignature, text, ClipBoardDataFormat.Text);
                         UpdateIndexesAndFilter();
                         return;
@@ -277,17 +235,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                     var bitmap = await clipboard.TryGetBitmapAsync();
                     if (bitmap != null)
                     {
-                        if (ShouldSkipImageHash(bitmap))
-                        {
-                            return;
-                        }
+                        if (ShouldSkipImageHash(bitmap)) return;
 
                         var imageSignature = ComputeImageSignature(bitmap);
                         var imageLabel = $"[Image] {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}";
-                        if (imageSignature == _lastClipboardSignature)
-                        {
-                            return;
-                        }
+                        if (imageSignature == _lastClipboardSignature) return;
                         UpsertClipboardItem(imageSignature, imageLabel, ClipBoardDataFormat.Image, bitmap);
                         UpdateIndexesAndFilter();
                     }
@@ -297,24 +249,20 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                     // Ignore transient locks when external applications update clipboard
                 }
             });
-        }
     }
 
-    private void OnDelete(ClipBoardItem obj)
+    private void OnDelete(Models.ClipBoardItem obj)
     {
         obj.OnDelete -= OnDelete;
         ClipboardHistory.Remove(obj);
 
-        if (SelectedItem == obj)
-        {
-            SelectedItem = FilteredHistory.FirstOrDefault();
-        }
+        if (SelectedItem == obj) SelectedItem = FilteredHistory.FirstOrDefault();
 
         UpdateIndexesAndFilter();
     }
 
     [RelayCommand]
-    public async Task CopyAsync(ClipBoardItem? item)
+    public async Task CopyAsync(Models.ClipBoardItem? item)
     {
         var targetItem = item ?? SelectedItem;
         if (targetItem == null) return;
@@ -358,20 +306,13 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         var settingsWindow = new SettingsWindow { DataContext = settingsVm };
 
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
             if (desktop?.MainWindow != null)
-            {
                 await settingsWindow.ShowDialog(desktop.MainWindow);
-            }
-        }
     }
 
     public void SelectAndPasteByIndex(int index)
     {
-        if (index >= 0 && index < FilteredHistory.Count)
-        {
-            SelectedItem = FilteredHistory[index];
-        }
+        if (index >= 0 && index < FilteredHistory.Count) SelectedItem = FilteredHistory[index];
     }
 
     private void ApplyFilter()
@@ -380,10 +321,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         if (string.IsNullOrWhiteSpace(SearchText))
         {
-            foreach (var item in ClipboardHistory)
-            {
-                FilteredHistory.Add(item);
-            }
+            foreach (var item in ClipboardHistory) FilteredHistory.Add(item);
         }
         else
         {
@@ -398,10 +336,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                 .OrderByDescending(x => x.Score)
                 .Select(x => x.Item);
 
-            foreach (var item in matches)
-            {
-                FilteredHistory.Add(item);
-            }
+            foreach (var item in matches) FilteredHistory.Add(item);
         }
 
         UpdateIndexes();
@@ -421,14 +356,6 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         var i = 1;
         foreach (var clipBoardItem in FilteredHistory.OrderBy(q => q.Timestamp).ToList())
-        {
             clipBoardItem.DisplayIndex = i++;
-        }
-
-    }
-
-    public void Dispose()
-    {
-        StopMonitoringClipboard();
     }
 }

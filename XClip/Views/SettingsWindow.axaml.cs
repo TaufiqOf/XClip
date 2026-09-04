@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -21,28 +22,27 @@ public partial class SettingsWindow : Window
         if (DataContext is not SettingsViewModel vm) return;
 
         // Skip modifier-only key presses
-        if (e.Key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin)
+        if (e.Key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift
+            or Key.LWin or Key.RWin)
             return;
 
         // Extract Modifiers
-        EventMask mask = EventMask.None;
+        var mask = EventMask.None;
         if (e.KeyModifiers.HasFlag(KeyModifiers.Alt)) mask |= EventMask.LeftAlt;
         if (e.KeyModifiers.HasFlag(KeyModifiers.Control)) mask |= EventMask.LeftCtrl;
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) mask |= EventMask.LeftShift;
         if (e.KeyModifiers.HasFlag(KeyModifiers.Meta)) mask |= EventMask.LeftMeta;
 
         // Map Avalonia Key to SharpHook KeyCode
-        if (TryMapKeyToSharpHook(e.Key, out KeyCode keyCode))
-        {
+        if (TryMapKeyToSharpHook(e.Key, out var keyCode))
             vm.SetHotkey(mask, keyCode, BuildDisplayString(e.KeyModifiers, e.Key));
-        }
     }
 
     private static bool TryMapKeyToSharpHook(Key key, out KeyCode keyCode)
     {
         // SharpHook uses Virtual Key Code naming (VcK = 'K', VcA = 'A', etc.)
         if (Enum.TryParse($"Vc{key}", true, out keyCode)) return true;
-        
+
         // Handle numbers
         if (key >= Key.D0 && key <= Key.D9)
         {
@@ -56,7 +56,7 @@ public partial class SettingsWindow : Window
 
     private static string BuildDisplayString(KeyModifiers modifiers, Key key)
     {
-        var parts = new System.Collections.Generic.List<string>();
+        var parts = new List<string>();
         if (modifiers.HasFlag(KeyModifiers.Control)) parts.Add("Ctrl");
         if (modifiers.HasFlag(KeyModifiers.Alt)) parts.Add("Alt");
         if (modifiers.HasFlag(KeyModifiers.Shift)) parts.Add("Shift");
@@ -65,6 +65,13 @@ public partial class SettingsWindow : Window
         return string.Join(" + ", parts);
     }
 
-    private void OnSaveClick(object? sender, RoutedEventArgs e) => Close(true);
-    private void OnCancelClick(object? sender, RoutedEventArgs e) => Close(false);
+    private void OnSaveClick(object? sender, RoutedEventArgs e)
+    {
+        Close(true);
+    }
+
+    private void OnCancelClick(object? sender, RoutedEventArgs e)
+    {
+        Close(false);
+    }
 }

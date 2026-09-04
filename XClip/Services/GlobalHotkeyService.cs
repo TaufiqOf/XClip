@@ -13,15 +13,9 @@ namespace XClip.Services;
 public class GlobalHotkeyService : IDisposable
 {
     private readonly EventLoopGlobalHook? _hook;
-    private readonly EventSimulator? _simulator;
-    private readonly Action _onHotKeyPressed;
     private readonly bool _isWaylandSession;
-
-    public EventMask TargetModifiers { get; set; } = EventMask.LeftAlt | EventMask.LeftShift;
-    public KeyCode TargetKey { get; set; } = KeyCode.VcK;
-    
-    // Always true now, as we provide Wayland-compatible fallback mechanisms
-    public bool IsSupported => true;
+    private readonly Action _onHotKeyPressed;
+    private readonly EventSimulator? _simulator;
 
     public GlobalHotkeyService(Action onHotKeyPressed)
     {
@@ -36,12 +30,24 @@ public class GlobalHotkeyService : IDisposable
         }
     }
 
+    public EventMask TargetModifiers { get; set; } = EventMask.LeftAlt | EventMask.LeftShift;
+    public KeyCode TargetKey { get; set; } = KeyCode.VcK;
+
+    // Always true now, as we provide Wayland-compatible fallback mechanisms
+    public bool IsSupported => true;
+
+    public void Dispose()
+    {
+        if (_hook != null)
+        {
+            _hook.KeyPressed -= OnKeyPressed;
+            _hook.Dispose();
+        }
+    }
+
     public void Start()
     {
-        if (!_isWaylandSession)
-        {
-            _hook?.RunAsync();
-        }
+        if (!_isWaylandSession) _hook?.RunAsync();
     }
 
     public async Task SimulatePasteAsync()
@@ -56,7 +62,7 @@ public class GlobalHotkeyService : IDisposable
 
         if (_simulator == null) return;
 
-        bool isMac = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        var isMac = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         var modifierKey = isMac ? KeyCode.VcLeftMeta : KeyCode.VcLeftControl;
 
         // X11 / Windows / macOS Simulation
@@ -94,16 +100,10 @@ public class GlobalHotkeyService : IDisposable
 
     private static bool IsWaylandSession()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            return false;
-        }
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return false;
 
         var sessionType = Environment.GetEnvironmentVariable("XDG_SESSION_TYPE");
-        if (string.Equals(sessionType, "wayland", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
+        if (string.Equals(sessionType, "wayland", StringComparison.OrdinalIgnoreCase)) return true;
 
         return !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
     }
@@ -111,14 +111,11 @@ public class GlobalHotkeyService : IDisposable
     private void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
     {
         var currentMask = e.RawEvent.Mask;
-        
-        bool modifiersMatch = (currentMask & TargetModifiers) == TargetModifiers;
-        bool keyMatches = e.Data.KeyCode == TargetKey;
 
-        if (modifiersMatch && keyMatches)
-        {
-            Dispatcher.UIThread.Post(_onHotKeyPressed);
-        }
+        var modifiersMatch = (currentMask & TargetModifiers) == TargetModifiers;
+        var keyMatches = e.Data.KeyCode == TargetKey;
+
+        if (modifiersMatch && keyMatches) Dispatcher.UIThread.Post(_onHotKeyPressed);
     }
 
     public void UpdateHotkey(EventMask modifiers, KeyCode key)
@@ -163,15 +160,6 @@ public class GlobalHotkeyService : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"[XClip] Failed to run {fileName}: {ex.Message}");
-        }
-    }
-
-    public void Dispose()
-    {
-        if (_hook != null)
-        {
-            _hook.KeyPressed -= OnKeyPressed;
-            _hook.Dispose();
         }
     }
 }

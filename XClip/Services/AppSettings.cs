@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using SharpHook.Data;
@@ -15,7 +16,7 @@ public class AppSettings
 public static class SettingsManager
 {
     private static readonly string FolderPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "XClip");
 
     private static readonly string FilePath = Path.Combine(FolderPath, "settings.json");
@@ -26,7 +27,7 @@ public static class SettingsManager
         {
             if (File.Exists(FilePath))
             {
-                string json = File.ReadAllText(FilePath);
+                var json = File.ReadAllText(FilePath);
                 return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
             }
         }
@@ -43,13 +44,13 @@ public static class SettingsManager
         try
         {
             Directory.CreateDirectory(FolderPath);
-            string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
             File.ReadAllText(FilePath);
             File.WriteAllText(FilePath, json);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to save settings: {ex.Message}");
+            Debug.WriteLine($"Failed to save settings: {ex.Message}");
         }
     }
 }

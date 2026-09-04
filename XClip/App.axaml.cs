@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.IO.Pipes;
-using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -15,16 +14,15 @@ using XClip.Views;
 
 namespace XClip;
 
-public partial class App : Application
+public class App : Application
 {
     private const string PipeName = "XClip_IPC_Pipe";
-
-    private TrayIcon? _trayIcon;
     private GlobalHotkeyService? _hotkeyService;
-    private bool _isShuttingDown;
     private bool _isCleanedUp;
 
-    public bool IsShuttingDown => _isShuttingDown;
+    private TrayIcon? _trayIcon;
+
+    public bool IsShuttingDown { get; private set; }
 
     public override void Initialize()
     {
@@ -35,8 +33,8 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            string[] args = desktop.Args ?? Array.Empty<string>();
-            bool isToggleRequested = args.Contains("--toggle-window", StringComparer.OrdinalIgnoreCase);
+            var args = desktop.Args ?? Array.Empty<string>();
+            var isToggleRequested = args.Contains("--toggle-window", StringComparer.OrdinalIgnoreCase);
 
             // Check if a primary instance is already running
             if (CanConnectToExistingInstance(isToggleRequested))
@@ -55,10 +53,7 @@ public partial class App : Application
                 TargetKey = settings.Key
             };
 
-            if (_hotkeyService.IsSupported)
-            {
-                _hotkeyService.Start();
-            }
+            if (_hotkeyService.IsSupported) _hotkeyService.Start();
 
             var mainWindow = new MainWindow(_hotkeyService);
             desktop.MainWindow = mainWindow;
@@ -69,10 +64,7 @@ public partial class App : Application
             // Start background IPC server listener
             _ = StartIpcListenerAsync();
 
-            if (isToggleRequested)
-            {
-                Dispatcher.UIThread.Post(ToggleMainWindow);
-            }
+            if (isToggleRequested) Dispatcher.UIThread.Post(ToggleMainWindow);
         }
 
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
@@ -115,8 +107,7 @@ public partial class App : Application
 
     private async Task StartIpcListenerAsync()
     {
-        while (!_isShuttingDown)
-        {
+        while (!IsShuttingDown)
             try
             {
                 using var server = new NamedPipeServerStream(
@@ -129,18 +120,14 @@ public partial class App : Application
                 await server.WaitForConnectionAsync();
 
                 using var reader = new StreamReader(server);
-                string? message = await reader.ReadLineAsync();
+                var message = await reader.ReadLineAsync();
 
-                if (message == "--toggle-window")
-                {
-                    Dispatcher.UIThread.Post(ToggleMainWindow);
-                }
+                if (message == "--toggle-window") Dispatcher.UIThread.Post(ToggleMainWindow);
             }
             catch
             {
                 // Ignore pipe interrupts during application shutdown
             }
-        }
     }
 
     private void OnActualThemeVariantChanged(object? sender, EventArgs e)
@@ -150,7 +137,7 @@ public partial class App : Application
 
     private void UpdateIcons(ThemeVariant theme)
     {
-        string assetUri = theme == ThemeVariant.Dark
+        var assetUri = theme == ThemeVariant.Dark
             ? "avares://XClip/Assets/icon-dark.ico"
             : "avares://XClip/Assets/icon-light.ico";
 
@@ -181,20 +168,15 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
             desktop.MainWindow is MainWindow window)
-        {
             window.ShowFromTray();
-        }
     }
 
     private void ExitApp_OnClick(object? sender, EventArgs e)
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            _isShuttingDown = true;
-            if (desktop.MainWindow is MainWindow window)
-            {
-                window.ForceExit();
-            }
+            IsShuttingDown = true;
+            if (desktop.MainWindow is MainWindow window) window.ForceExit();
 
             CleanupResources();
             desktop.Shutdown();
@@ -203,10 +185,7 @@ public partial class App : Application
 
     private void ToggleMainWindow()
     {
-        if (_isShuttingDown)
-        {
-            return;
-        }
+        if (IsShuttingDown) return;
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
             desktop.MainWindow is MainWindow window)
@@ -220,36 +199,31 @@ public partial class App : Application
 
     private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
-        _isShuttingDown = true;
+        IsShuttingDown = true;
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
             desktop.MainWindow is MainWindow window)
-        {
             window.ForceExit();
-        }
 
         CleanupResources();
     }
 
     private void OnDesktopExit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
     {
-        _isShuttingDown = true;
+        IsShuttingDown = true;
         CleanupResources();
         AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
     }
 
     private void OnProcessExit(object? sender, EventArgs e)
     {
-        _isShuttingDown = true;
+        IsShuttingDown = true;
         CleanupResources();
     }
 
     private void CleanupResources()
     {
-        if (_isCleanedUp)
-        {
-            return;
-        }
+        if (_isCleanedUp) return;
 
         _isCleanedUp = true;
         ActualThemeVariantChanged -= OnActualThemeVariantChanged;

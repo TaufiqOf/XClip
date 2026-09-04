@@ -4,19 +4,23 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity; // Required for RoutingStrategies
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using XClip.Services;
 using XClip.ViewModels;
+// Required for RoutingStrategies
 
 namespace XClip.Views;
 
 public partial class MainWindow : Window
 {
-    private readonly GlobalHotkeyService _hotkeyService;
-    private bool _isClosingForReal;
     private const int NumericSelectionMaxDigits = 2;
     private static readonly TimeSpan NumericSelectionDelay = TimeSpan.FromMilliseconds(350);
+    private readonly GlobalHotkeyService _hotkeyService;
+
+    private string _inputBuffer = string.Empty;
+    private DispatcherTimer? _inputTimer;
+    private bool _isClosingForReal;
 
     public MainWindow(GlobalHotkeyService hotkeyService)
     {
@@ -29,9 +33,6 @@ public partial class MainWindow : Window
         // Use Tunnel routing strategy to catch key presses before ListBox consumes them
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
     }
-
-    private string _inputBuffer = string.Empty;
-    private DispatcherTimer? _inputTimer;
 
     private async void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
@@ -48,13 +49,11 @@ public partial class MainWindow : Window
         {
             // Don't intercept digit shortcuts if user is currently typing in SearchTextBox
             if (!SearchTextBox.IsFocused && TryGetDigitFromKey(e.Key, out var digit))
-            {
                 if (await HandleBufferedNumericSelectionAsync(vm, digit))
                 {
                     e.Handled = true;
                     return;
                 }
-            }
 
             if (e.Key == Key.Enter || e.Key == Key.Return)
             {
@@ -90,9 +89,9 @@ public partial class MainWindow : Window
 
     private async Task ProcessBufferSelectionAsync(MainViewModel vm)
     {
-        if (int.TryParse(_inputBuffer, out int targetNumber) && targetNumber > 0)
+        if (int.TryParse(_inputBuffer, out var targetNumber) && targetNumber > 0)
         {
-            int targetIndex = targetNumber - 1; // Convert 1-based display to 0-based index
+            var targetIndex = targetNumber - 1; // Convert 1-based display to 0-based index
 
             if (targetIndex < vm.FilteredHistory.Count)
             {
@@ -108,10 +107,7 @@ public partial class MainWindow : Window
 
     private async Task<bool> HandleBufferedNumericSelectionAsync(MainViewModel vm, int digit)
     {
-        if (string.IsNullOrEmpty(_inputBuffer) && digit == 0)
-        {
-            return false;
-        }
+        if (string.IsNullOrEmpty(_inputBuffer) && digit == 0) return false;
 
         _inputBuffer += digit;
 
@@ -139,13 +135,9 @@ public partial class MainWindow : Window
         _inputTimer?.Stop();
 
         if (DataContext is MainViewModel vm)
-        {
             await ProcessBufferSelectionAsync(vm);
-        }
         else
-        {
             _inputBuffer = string.Empty;
-        }
     }
 
     private static bool TryGetDigitFromKey(Key key, out int digit)
@@ -178,13 +170,13 @@ public partial class MainWindow : Window
         if (screen == null) return;
 
         var workArea = screen.WorkingArea;
-        int windowWidthPixels = (int)(Width * screen.Scaling);
-        int windowHeightPixels = (int)(Height * screen.Scaling);
+        var windowWidthPixels = (int)(Width * screen.Scaling);
+        var windowHeightPixels = (int)(Height * screen.Scaling);
 
-        int x = workArea.X + workArea.Width - windowWidthPixels;
-        int y = workArea.Y + workArea.Height - windowHeightPixels;
+        var x = workArea.X + workArea.Width - windowWidthPixels;
+        var y = workArea.Y + workArea.Height - windowHeightPixels;
 
-        Position = new Avalonia.PixelPoint(x, y);
+        Position = new PixelPoint(x, y);
     }
 
     public void ForceExit()
@@ -216,20 +208,13 @@ public partial class MainWindow : Window
 
         if (DataContext is MainViewModel vm && vm.ClipboardHistory.Any())
         {
-            if (ListBox.SelectedItem == null)
-            {
-                ListBox.SelectedIndex = 0;
-            }
+            if (ListBox.SelectedItem == null) ListBox.SelectedIndex = 0;
 
-            var container = ListBox.ContainerFromIndex(ListBox.SelectedIndex) as Control;
+            var container = ListBox.ContainerFromIndex(ListBox.SelectedIndex);
             if (container != null)
-            {
-                container.Focus(NavigationMethod.Unspecified);
-            }
+                container.Focus();
             else
-            {
                 ListBox.Focus();
-            }
         }
         else
         {
@@ -242,15 +227,12 @@ public partial class MainWindow : Window
         _inputTimer?.Stop();
         _inputTimer = null;
 
-        if (DataContext is IDisposable disposableVm)
-        {
-            disposableVm.Dispose();
-        }
+        if (DataContext is IDisposable disposableVm) disposableVm.Dispose();
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        bool appIsShuttingDown = (Application.Current as App)?.IsShuttingDown == true;
+        var appIsShuttingDown = (Application.Current as App)?.IsShuttingDown == true;
 
         if (!_isClosingForReal && !appIsShuttingDown)
         {

@@ -20,7 +20,7 @@ public static class AutoStartManager
     {
         get
         {
-            string fileName = IsFlatpak && !string.IsNullOrWhiteSpace(FlatpakId)
+            var fileName = IsFlatpak && !string.IsNullOrWhiteSpace(FlatpakId)
                 ? $"{FlatpakId}.desktop"
                 : $"{AppName}.desktop";
             return Path.Combine(LinuxAutostartDir, fileName);
@@ -29,10 +29,7 @@ public static class AutoStartManager
 
     public static bool IsEnabled()
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            return File.Exists(LinuxDesktopFilePath);
-        }
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return File.Exists(LinuxDesktopFilePath);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -42,7 +39,7 @@ public static class AutoStartManager
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            string plistFile = Path.Combine(
+            var plistFile = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "Library", "LaunchAgents", "com.clipboardmanagerx.autostart.plist");
             return File.Exists(plistFile);
@@ -55,25 +52,22 @@ public static class AutoStartManager
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            string desktopFile = LinuxDesktopFilePath;
+            var desktopFile = LinuxDesktopFilePath;
 
             if (enable)
             {
-                if (!TryGetLinuxExecCommand(out var execCommand))
-                {
-                    return;
-                }
+                if (!TryGetLinuxExecCommand(out var execCommand)) return;
 
                 Directory.CreateDirectory(LinuxAutostartDir);
 
-                string content = $"""
-                                  [Desktop Entry]
-                                  Type=Application
-                                  Name={AppName}
-                                  Exec={execCommand}
-                                  Terminal=false
-                                  X-GNOME-Autostart-enabled=true
-                                  """;
+                var content = $"""
+                               [Desktop Entry]
+                               Type=Application
+                               Name={AppName}
+                               Exec={execCommand}
+                               Terminal=false
+                               X-GNOME-Autostart-enabled=true
+                               """;
 
                 File.WriteAllText(desktopFile, content);
             }
@@ -81,11 +75,12 @@ public static class AutoStartManager
             {
                 File.Delete(desktopFile);
             }
+
             return;
         }
 
         // Standard Windows / macOS implementation
-        string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
+        var exePath = Process.GetCurrentProcess().MainModule?.FileName;
         if (string.IsNullOrEmpty(exePath)) return;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -98,31 +93,31 @@ public static class AutoStartManager
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            string launchAgentsDir = Path.Combine(
+            var launchAgentsDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "Library", "LaunchAgents");
-            string plistFile = Path.Combine(launchAgentsDir, "com.clipboardmanagerx.autostart.plist");
+            var plistFile = Path.Combine(launchAgentsDir, "com.clipboardmanagerx.autostart.plist");
 
             if (enable)
             {
                 Directory.CreateDirectory(launchAgentsDir);
-                string plistContent = $"""
-                                       <?xml version="1.0" encoding="UTF-8"?>
-                                       <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-                                       <plist version="1.0">
-                                       <dict>
-                                           <key>Label</key>
-                                           <string>com.clipboardmanagerx.autostart</string>
-                                           <key>ProgramArguments</key>
-                                           <array>
-                                               <string>{exePath}</string>
-                                               <string>--autostart</string>
-                                           </array>
-                                           <key>RunAtLoad</key>
-                                           <true/>
-                                       </dict>
-                                       </plist>
-                                       """;
+                var plistContent = $"""
+                                    <?xml version="1.0" encoding="UTF-8"?>
+                                    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+                                    <plist version="1.0">
+                                    <dict>
+                                        <key>Label</key>
+                                        <string>com.clipboardmanagerx.autostart</string>
+                                        <key>ProgramArguments</key>
+                                        <array>
+                                            <string>{exePath}</string>
+                                            <string>--autostart</string>
+                                        </array>
+                                        <key>RunAtLoad</key>
+                                        <true/>
+                                    </dict>
+                                    </plist>
+                                    """;
                 File.WriteAllText(plistFile, plistContent);
             }
             else if (File.Exists(plistFile))
@@ -140,14 +135,14 @@ public static class AutoStartManager
             return true;
         }
 
-        string? appImagePath = Environment.GetEnvironmentVariable("APPIMAGE");
+        var appImagePath = Environment.GetEnvironmentVariable("APPIMAGE");
         if (!string.IsNullOrWhiteSpace(appImagePath) && File.Exists(appImagePath))
         {
             execCommand = $"\"{EscapeDesktopExecArg(appImagePath)}\" --autostart";
             return true;
         }
 
-        string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
+        var exePath = Process.GetCurrentProcess().MainModule?.FileName;
         if (!string.IsNullOrWhiteSpace(exePath))
         {
             execCommand = $"\"{EscapeDesktopExecArg(exePath)}\" --autostart";

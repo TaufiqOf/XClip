@@ -10,10 +10,7 @@ public class TruncateConverter : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is string str && str.Length > MaxLength)
-        {
-            return str[..MaxLength] + "...";
-        }
+        if (value is string str && str.Length > MaxLength) return str[..MaxLength] + "...";
         return value;
     }
 
