@@ -70,21 +70,28 @@
                 x:Name="ListBox"
                 ItemsSource="{Binding FilteredHistory}"
                 SelectionMode="Single"
-                SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
-                DoubleTapped="OnListBoxDoubleTapped">
+                SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
 
                 <ListBox.Styles>
-                    <Style Selector="ListBoxItem" x:DataType="models:ClipBoardItem">
+                    <Style Selector="ListBoxItem" x:DataType="models:ClipboardItem">
                         <Setter Property="ToolTip.Tip"
                                 Value="{Binding Text, Converter={StaticResource Truncate500Converter}}" />
                     </Style>
                 </ListBox.Styles>
 
                 <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="models:ClipBoardItem">
+   
+                    <DataTemplate x:DataType="models:ClipboardItem">
+          
                         <Border Padding="8,6" CornerRadius="4">
                             <Grid ColumnDefinitions="Auto,Auto,*,Auto" RowDefinitions="Auto,Auto">
-
+                                <Interaction.Behaviors>
+                                    <EventTriggerBehavior EventName="DoubleTapped">
+                                        <InvokeCommandAction
+                                            Command="{Binding DoubleClickCommand}"
+                                            CommandParameter="{Binding}" />
+                                    </EventTriggerBehavior>
+                                </Interaction.Behaviors>
                                 <!-- Index Badge (Column 0) -->
                                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
                                         Background="#2D2D2D"
@@ -92,6 +99,7 @@
                                         Width="22" Height="22"
                                         Margin="0,0,10,0"
                                         VerticalAlignment="Center">
+                       
                                     <TextBlock Text="{Binding DisplayIndex}"
                                                FontSize="12"
                                                FontWeight="Bold"
@@ -114,7 +122,7 @@
 
                                 <!-- Text Preview (Column 2 - Always Visible) -->
                                 <TextBlock Grid.Row="0" Grid.Column="2"
-                                           Text="{Binding Text}"
+                                           Text="{Binding DisplayText}"
                                            FontSize="14"
                                            TextWrapping="Wrap"
                                            MaxLines="2"
@@ -122,12 +130,23 @@
                                            VerticalAlignment="Center"
                                            Margin="0" />
 
-                                <!-- Timestamp (Column 2 - Always Visible) -->
-                                <TextBlock Grid.Row="1" Grid.Column="2"
-                                           Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}"
-                                           FontSize="11"
-                                           Foreground="#888888"
-                                           Margin="0,4,0,0" />
+                                <!-- Type + Timestamp (Column 2 - Always Visible) -->
+                                <StackPanel Grid.Row="1" Grid.Column="2"
+                                            Orientation="Horizontal"
+                                            Spacing="8"
+                                            Margin="0,4,0,0">
+                                    <Border Background="#202020"
+                                            CornerRadius="3"
+                                            Padding="6,1">
+                                        <TextBlock Text="{Binding Format}"
+                                                   FontSize="10"
+                                                   Foreground="#B8B8B8" />
+                                    </Border>
+
+                                    <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}"
+                                               FontSize="11"
+                                               Foreground="#888888" />
+                                </StackPanel>
 
                                 <!-- Inline Delete Button (Column 3) -->
                                 <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"

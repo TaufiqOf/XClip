@@ -14,8 +14,8 @@ public sealed class IsImageFormatConverter : IValueConverter
         object? parameter,
         CultureInfo culture)
     {
-        var isImage = value is ClipBoardDataFormat format &&
-                      format == ClipBoardDataFormat.Image;
+        var isImage = value is ClipboardDataFormat format &&
+                      format == ClipboardDataFormat.Image;
 
         if (parameter?.ToString() == "Inverse")
             return !isImage;

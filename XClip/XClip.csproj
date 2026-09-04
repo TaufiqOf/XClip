@@ -12,10 +12,10 @@
 
     <ItemGroup>
         <PackageReference Include="AutoLaunch" Version="1.0.1"/>
-        <PackageReference Include="Avalonia" Version="12.1.1"/>
-        <PackageReference Include="Avalonia.Desktop" Version="12.1.1"/>
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1"/>
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1"/>
+        <PackageReference Include="Avalonia" Version="12.1.2" />
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
@@ -25,6 +25,11 @@
         <PackageReference Include="FluentIcons.Avalonia.Fluent" Version="2.1.339.1"/>
         <PackageReference Include="FuzzySharp" Version="2.0.2"/>
         <PackageReference Include="SharpHook" Version="8.0.0"/>
-        <PackageReference Include="Tmds.DBus" Version="0.95.0"/>
+        <PackageReference Include="Tmds.DBus" Version="0.95.1" />
+        <PackageReference Include="Xaml.Behaviors.Avalonia" Version="*" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="ViewModels\MainViewModelCopy.cs" />
     </ItemGroup>
 </Project>
