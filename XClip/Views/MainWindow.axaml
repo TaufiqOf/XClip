@@ -7,6 +7,8 @@
         xmlns:converters="clr-namespace:XClip.Converters"
         xmlns:models="clr-namespace:XClip.Models"
         xmlns:services="clr-namespace:XClip.Services"
+        xmlns:helper="clr-namespace:XClip.Helper"
+        xmlns:controls="clr-namespace:XClip.Views.Controls"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="XClip.Views.MainWindow"
         x:DataType="vm:MainViewModel"
@@ -20,154 +22,25 @@
         <converters:IsImageFormatConverter x:Key="IsImageFormatConverter" />
         <converters:ToUpperConverter x:Key="ToUpperConverter" />
         <!-- Clipboard Item Template Selector -->
-        <services:ClipboardItemTemplateSelector x:Key="ClipboardItemSelector">
+        <!-- Clipboard Item Template Selector -->
+        <helper:ClipboardItemTemplateSelector x:Key="ClipboardItemSelector">
 
             <!-- TEXT FORMAT TEMPLATE -->
             <DataTemplate x:Key="{x:Static models:ClipboardDataFormat.Text}" x:DataType="models:ClipboardItem">
-                <Border  CornerRadius="4">
-                    <Grid RowDefinitions="*,Auto">
-                        <!-- Text Content -->
-                        <TextBlock Grid.Row="0"
-                                   FontSize="14"
-                                   Text="{Binding DisplayText}" 
-                                   TextWrapping="Wrap" MaxLines="20" TextTrimming="CharacterEllipsis" />
-                        
-                        <Border Grid.Row="1" 
-                                Margin="0,4,0,0"
-                                CornerRadius="4"
-                                Background="{DynamicResource SystemControlBackgroundAltMediumBrush}" >
-                            <Grid ColumnDefinitions="Auto,*,Auto">
-                                <!-- Index Badge -->
-                                <Border Grid.Column="0"
-                                        Background="{DynamicResource SystemControlForegroundAccentBrush}"
-                                        CornerRadius="4"
-                                        Width="25"
-                                        Height="26"
-                                        Margin="0,0,0,0"
-                                        VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding DisplayIndex}" 
-                                               FontSize="12"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center" />
-                                </Border>
-                                <!-- Format Tag & Timestamp -->
-                                <StackPanel Grid.Column="1"
-                                            Orientation="Horizontal"
-                                            Spacing="8"
-                                            VerticalAlignment="Stretch"
-                                            HorizontalAlignment="Stretch"
-                                            Margin="0,0,0,0">
-                                    <Border 
-                                        Background="{DynamicResource SystemControlForegroundAccentBrush}" 
-                                        Margin="5,2,5,2"
-                                        VerticalAlignment="Stretch"
-                                        CornerRadius="3" 
-                                        Padding="6,1">
-                                        <TextBlock Text="{Binding Format,Converter={StaticResource ToUpperConverter}}" 
-                                                   VerticalAlignment="Center"
-                                                   FontSize="12" 
-                                                   Foreground= "{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                                    </Border>
-                                    <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}"
-                                               VerticalAlignment="Center"
-                                               FontSize="11"
-                                               Foreground="#888888" />
-
-                                </StackPanel>
-                                <!-- Delete Button -->
-                                <Button Grid.Column="2"
-                                        Command="{Binding DeleteCommand}" Background="Transparent" BorderThickness="0"
-                                        Padding="6">
-                                    <avalonia:FluentIcon Icon="Delete" FontSize="14" />
-                                </Button>
-                            </Grid>
-                        </Border>
-                    </Grid>
-                </Border>
+                <controls:TextItemControl />
             </DataTemplate>
 
             <!-- IMAGE FORMAT TEMPLATE -->
             <DataTemplate x:Key="{x:Static models:ClipboardDataFormat.Image}" x:DataType="models:ClipboardItem">
-                <Border Padding="8,6" CornerRadius="4">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" RowDefinitions="Auto,Auto">
-                        <!-- Index Badge -->
-                        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                                Background="#2D2D2D" CornerRadius="4" Width="22" Height="22"
-                                Margin="0,0,10,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding DisplayIndex}" FontSize="12" FontWeight="Bold"
-                                       Foreground="#AAAAAA" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-
-                        <!-- Image Thumbnail -->
-                        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                                Width="72" Height="48" Margin="0,0,10,0" CornerRadius="4" ClipToBounds="True">
-                            <Image Source="{Binding ImageData}" Stretch="UniformToFill" />
-                        </Border>
-
-                        <!-- Label / Info -->
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="[Image Clipboard Content]" FontSize="14"
-                                   FontWeight="SemiBold" />
-
-                        <!-- Timestamp -->
-                        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                            <Border Background="#1C3D5A" CornerRadius="3" Padding="6,1">
-                                <TextBlock Text="Image" FontSize="10" Foreground="#61AFEF" />
-                            </Border>
-                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}" FontSize="11"
-                                       Foreground="#888888" />
-                        </StackPanel>
-
-                        <!-- Delete Button -->
-                        <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
-                                Command="{Binding DeleteCommand}" Background="Transparent" BorderThickness="0"
-                                Padding="6">
-                            <avalonia:FluentIcon Icon="Delete" FontSize="14" />
-                        </Button>
-                    </Grid>
-                </Border>
+                <controls:ImageItemControl />
             </DataTemplate>
 
             <!-- STORAGE ITEMS (FILES) TEMPLATE -->
             <DataTemplate x:Key="{x:Static models:ClipboardDataFormat.StorageItems}" x:DataType="models:ClipboardItem">
-                <Border Padding="8,6" CornerRadius="4">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" RowDefinitions="Auto,Auto">
-                        <!-- Index Badge -->
-                        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                                Background="#2D2D2D" CornerRadius="4" Width="22" Height="22"
-                                Margin="0,0,10,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding DisplayIndex}" FontSize="12" FontWeight="Bold"
-                                       Foreground="#AAAAAA" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-
-                        <!-- File Icon -->
-                        <avalonia:FluentIcon Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                                             Icon="Folder" FontSize="28" Margin="0,0,10,0" VerticalAlignment="Center" />
-
-                        <!-- File List Display -->
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding DisplayText}" FontSize="14"
-                                   TextTrimming="CharacterEllipsis" />
-
-                        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                            <Border Background="#2D3B2D" CornerRadius="3" Padding="6,1">
-                                <TextBlock Text="Files" FontSize="10" Foreground="#98C379" />
-                            </Border>
-                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}" FontSize="11"
-                                       Foreground="#888888" />
-                        </StackPanel>
-
-                        <!-- Delete Button -->
-                        <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
-                                Command="{Binding DeleteCommand}" Background="Transparent" BorderThickness="0"
-                                Padding="6">
-                            <avalonia:FluentIcon Icon="Delete" FontSize="14" />
-                        </Button>
-                    </Grid>
-                </Border>
+                <controls:StorageItemsControl />
             </DataTemplate>
 
-        </services:ClipboardItemTemplateSelector>
+        </helper:ClipboardItemTemplateSelector>
     </Window.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*">

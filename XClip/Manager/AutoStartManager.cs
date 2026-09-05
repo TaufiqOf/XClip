@@ -4,7 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
-namespace XClip.Services;
+namespace XClip.Manager;
 
 public static class AutoStartManager
 {

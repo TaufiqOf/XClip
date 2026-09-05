@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SharpHook.Data;
+using XClip.Helper;
+using XClip.Manager;
 using XClip.Services;
 
 namespace XClip.ViewModels;

@@ -4,7 +4,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Metadata;
 using XClip.Models;
 
-namespace XClip.Services;
+namespace XClip.Helper;
 
 public class ClipboardItemTemplateSelector : IDataTemplate
 {

@@ -7,9 +7,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using XClip.Models;
-using XClip.ViewModels;
+using XClip.Services;
+using XClip.Services.ClipboardService;
 
-namespace XClip.Services;
+namespace XClip.Manager;
 
 public static class ClipboardManager
 {
@@ -63,7 +64,6 @@ public static class ClipboardManager
             Console.WriteLine(e);
             throw;
         }
-       
     }
 
     public static async Task<ClipboardDataFormat?> GetDataTypeAsync(IClipboard clipboard)
@@ -83,11 +83,13 @@ public static class ClipboardManager
         {
             case ClipboardDataFormat.Text:
                 item = await _clipboardService[type].GetDataAsync(await clipboard.TryGetTextAsync());
-                if (item != null)
-                    await _clipboardService[type].CreateSignature(item);
+      
                 break;
         }
 
+        if (item == null) return item;
+        await _clipboardService[type].CreateSignature(item);
+        item.OnDelete += DeleteClipboardItem;
         return item;
     }
 
@@ -119,5 +121,10 @@ public static class ClipboardManager
             await clipboard.ClearAsync();
             await clipboard.SetTextAsync("");
         }
+    }
+
+    public static void DeleteClipboardItem(ClipboardItem item)
+    {
+        ClipboardHistory.Remove(item);
     }
 }

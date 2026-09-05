@@ -4,7 +4,7 @@ using System.IO;
 using System.Text.Json;
 using SharpHook.Data;
 
-namespace XClip.Services;
+namespace XClip.Helper;
 
 public class AppSettings
 {

@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:avalonia="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+             xmlns:converters="clr-namespace:XClip.Converters"
+             xmlns:models="clr-namespace:XClip.Models"
+             x:Class="XClip.Views.Controls.TextItemControl"
+             x:DataType="models:ClipboardItem">
+
+    <UserControl.Resources>
+        <converters:ToUpperConverter x:Key="ToUpperConverter" />
+    </UserControl.Resources>
+
+    <Border CornerRadius="4">
+        <Grid RowDefinitions="*,Auto">
+            <!-- Text Content -->
+            <TextBlock Grid.Row="0"
+                       FontSize="14"
+                       Text="{Binding DisplayText}" 
+                       TextWrapping="Wrap" MaxLines="20" TextTrimming="CharacterEllipsis" />
+            
+            <Border Grid.Row="1" 
+                    Margin="0,4,0,0"
+                    CornerRadius="4"
+                    Background="{DynamicResource SystemControlBackgroundAltMediumBrush}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Index Badge -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource SystemControlForegroundAccentBrush}"
+                            CornerRadius="4" Width="25" Height="26"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{Binding DisplayIndex}" FontSize="12" FontWeight="Bold"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- Format Tag & Timestamp -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                        <Border Background="{DynamicResource SystemControlForegroundAccentBrush}" 
+                                Margin="5,2,5,2" VerticalAlignment="Stretch" CornerRadius="3" Padding="6,1">
+                            <TextBlock Text="{Binding Format, Converter={StaticResource ToUpperConverter}}" 
+                                       VerticalAlignment="Center" FontSize="12" 
+                                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                        </Border>
+                        <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss - MMM dd}'}"
+                                   VerticalAlignment="Center" FontSize="11" Foreground="#888888" />
+                    </StackPanel>
+
+                    <!-- Delete Button -->
+                    <Button Grid.Column="2"
+                            Command="{Binding DeleteCommand}" Background="Transparent" BorderThickness="0" Padding="6">
+                        <avalonia:FluentIcon Icon="Delete" FontSize="14" />
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

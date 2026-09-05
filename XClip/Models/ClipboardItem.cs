@@ -11,16 +11,17 @@ public partial class ClipboardItem : ViewModelBase
 {
     [ObservableProperty] private int _displayIndex;
     [ObservableProperty] private ClipboardDataFormat _format = ClipboardDataFormat.Text;
-    [ObservableProperty] private Bitmap? _imageData;
     [ObservableProperty] private string _signature = string.Empty;
     [ObservableProperty] private string _displayText = string.Empty;
 
     [ObservableProperty] private DateTime _timestamp = DateTime.Now;
-    private string _text = string.Empty;
-
+    
+    [ObservableProperty] private Bitmap? _imageData;
     public IReadOnlyList<string> StorageItemPaths { get; set; } = Array.Empty<string>();
     public Action<ClipboardItem>? OnDelete { get; set; }
-    public Action<ClipboardItem>? OnDoubleClick;
+
+    
+    private string _text = string.Empty;
 
     public string Text
     {
@@ -33,19 +34,11 @@ public partial class ClipboardItem : ViewModelBase
             _text = value;
             OnPropertyChanged();
 
-            var displayText = value.Trim();
-            displayText = displayText.Length > 600 ? displayText.Substring(0, 600) + "..." : displayText;
-            DisplayText = displayText;
+
             OnPropertyChanged(nameof(DisplayText));
         }
     }
-
-    [RelayCommand]
-    public void DoubleClickCommand()
-    {
-        OnDoubleClick?.Invoke(this);
-    }
-
+    
 
     [RelayCommand]
     private void Delete()

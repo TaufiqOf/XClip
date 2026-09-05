@@ -8,6 +8,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using FuzzySharp;
+using XClip.Manager;
 using XClip.Models;
 using XClip.Services;
 using XClip.Views;
@@ -72,7 +73,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
     } = true;
 
-    public Models.ClipboardItem? SelectedItem
+    public ClipboardItem? SelectedItem
     {
         get;
         set
