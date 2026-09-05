@@ -16,13 +16,29 @@ public static class ClipboardManager
 {
     public static Action<ClipboardItem>? OnClipboardItemAdded;
     public static Action<ClipboardItem>? OnSelectExistingClipboardItem;
+    public static Action<ClipboardItem>? OnRemoveExistingClipboardItem;
     private static List<ClipboardItem> ClipboardHistory { get; set; } = new();
 
-    private static readonly Dictionary<ClipboardDataFormat, IClipboardService> _clipboardService;
+    private static readonly Dictionary<ClipboardDataFormat, AClipboardService> _clipboardService;
+    private static ClipboardItem? _selectedClipboardItem;
+
+    public static ClipboardItem? SelectedClipboardItem
+    {
+        get => _selectedClipboardItem;
+        set
+        {
+            if (value != null && ClipboardHistory.Contains(value))
+            {
+                _selectedClipboardItem = value;
+                _clipboardService[value.Format].CopyData(value);
+                OnSelectExistingClipboardItem?.Invoke(value);
+            }
+        }
+    }
 
     static ClipboardManager()
     {
-        _clipboardService = new Dictionary<ClipboardDataFormat, IClipboardService>();
+        _clipboardService = new Dictionary<ClipboardDataFormat, AClipboardService>();
         _clipboardService[ClipboardDataFormat.Text] = new TextClipboardService();
     }
 
@@ -51,7 +67,11 @@ public static class ClipboardManager
             var existingItem = ClipboardHistory.FirstOrDefault(q => q.Signature == item?.Signature);
             if (existingItem != null)
             {
-                OnSelectExistingClipboardItem?.Invoke(existingItem);
+                if (SelectedClipboardItem != existingItem)
+                {
+                    _selectedClipboardItem = existingItem;
+                    OnSelectExistingClipboardItem?.Invoke(existingItem);
+                }
             }
             else
             {
@@ -83,7 +103,7 @@ public static class ClipboardManager
         {
             case ClipboardDataFormat.Text:
                 item = await _clipboardService[type].GetDataAsync(await clipboard.TryGetTextAsync());
-      
+
                 break;
         }
 
@@ -123,8 +143,17 @@ public static class ClipboardManager
         }
     }
 
-    public static void DeleteClipboardItem(ClipboardItem item)
+    public static async void DeleteClipboardItem(ClipboardItem item)
     {
+        if (SelectedClipboardItem == item)
+            SelectedClipboardItem = null;
+        var clipboard = GetClipboard();
+        if (clipboard != null)
+        {
+            await clipboard.SetTextAsync("");
+        }
+
         ClipboardHistory.Remove(item);
+        OnRemoveExistingClipboardItem?.Invoke(item);
     }
 }

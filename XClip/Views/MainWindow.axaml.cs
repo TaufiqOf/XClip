@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     public MainWindow(GlobalHotkeyService hotkeyService)
     {
         _viewModel = new MainViewModel(hotkeyService);
+        _viewModel.OnHideToTray += HideToTray;
         _hotkeyService = hotkeyService;
         DataContext = _viewModel;
         InitializeComponent();
@@ -71,7 +72,7 @@ public partial class MainWindow : Window
         {
             HideToTray();
             _ = _viewModel.DoubleClickAsync();
-            _ = _hotkeyService.SimulatePasteAsync();
+            _ = _viewModel.SimulatePasteAsync();
         }
 
         _viewModel.OnWindowKeyDown(e);

@@ -1,12 +1,27 @@
 using System;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input.Platform;
 using XClip.Models;
 
 namespace XClip.Services.ClipboardService;
 
-internal class TextClipboardService : IClipboardService
+internal class TextClipboardService : AClipboardService
 {
-    public async Task<ClipboardItem?> GetDataAsync(string? text)
+    private readonly IClipboard _clipboard;
+    private static IClipboard? GetClipboard()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            return desktop.MainWindow?.Clipboard;
+
+        return null;
+    }
+    public TextClipboardService()
+    {
+
+    }
+    public override async Task<ClipboardItem?> GetDataAsync(string? text)
     {
         ClipboardItem? item = null;
         if (string.IsNullOrEmpty(text)) return await Task.FromResult(item);
@@ -25,6 +40,20 @@ internal class TextClipboardService : IClipboardService
         return await Task.FromResult(item);
     }
 
+ 
+
+    public override Task CreateSignature(ClipboardItem item)
+    {
+        item.Signature = item.Text.GetHashCode().ToString();
+        return Task.CompletedTask;
+    }
+
+    public override Task CopyData(ClipboardItem value)
+    {
+        var clipboard = GetClipboard();
+        return clipboard!.SetTextAsync(value.Text);
+    }
+    
     private static string DisplayText(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -61,13 +90,6 @@ internal class TextClipboardService : IClipboardService
 
         return string.Join(Environment.NewLine, lines);
     }
-
-    public Task CreateSignature(ClipboardItem item)
-    {
-        item.Signature = item.Text.GetHashCode().ToString();
-        return Task.CompletedTask;
-    }
-
     private string? StripText(string? text)
     {
         return text?.Trim().Replace("\r", "").Replace("\n", "").Replace("\t", "");
