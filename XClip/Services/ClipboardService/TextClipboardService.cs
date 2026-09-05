@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using XClip.Models;
 
@@ -9,38 +11,31 @@ namespace XClip.Services.ClipboardService;
 
 internal class TextClipboardService : AClipboardService
 {
-    private readonly IClipboard _clipboard;
-    private static IClipboard? GetClipboard()
-    {
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            return desktop.MainWindow?.Clipboard;
-
-        return null;
-    }
     public TextClipboardService()
     {
-
     }
-    public override async Task<ClipboardItem?> GetDataAsync(string? text)
+
+    public override async Task<ClipboardItem?> GetDataAsync()
     {
         ClipboardItem? item = null;
-        if (string.IsNullOrEmpty(text)) return await Task.FromResult(item);
-        var testEmpty = StripText(text);
+        var clipboard = GetClipboard();
+        if (clipboard == null) return await Task.FromResult(item);
+        var text = await clipboard.TryGetTextAsync();
+        if (text is not string str || string.IsNullOrEmpty(str)) return await Task.FromResult(item);
+        var testEmpty = StripText(str);
         if (string.IsNullOrEmpty(testEmpty)) return await Task.FromResult(item);
-        var displayText = DisplayText(text);
+        var displayText = DisplayText(str);
         item = new ClipboardItem
         {
             Format = ClipboardDataFormat.Text,
-            Text = text,
+            Text = str,
             Timestamp = DateTime.Now,
             DisplayText = displayText
-
         };
 
         return await Task.FromResult(item);
     }
 
- 
 
     public override Task CreateSignature(ClipboardItem item)
     {
@@ -53,7 +48,16 @@ internal class TextClipboardService : AClipboardService
         var clipboard = GetClipboard();
         return clipboard!.SetTextAsync(value.Text);
     }
-    
+
+    public override async Task<object?> GetClipboardData()
+    {
+        var clipboard = GetClipboard();
+        if (clipboard == null) return null;
+        var text = await clipboard.TryGetTextAsync();
+        return text ?? null;
+    }
+
+
     private static string DisplayText(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -90,6 +94,7 @@ internal class TextClipboardService : AClipboardService
 
         return string.Join(Environment.NewLine, lines);
     }
+
     private string? StripText(string? text)
     {
         return text?.Trim().Replace("\r", "").Replace("\n", "").Replace("\t", "");

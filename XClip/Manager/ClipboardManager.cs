@@ -19,9 +19,15 @@ public static class ClipboardManager
     public static Action<ClipboardItem>? OnRemoveExistingClipboardItem;
     private static List<ClipboardItem> ClipboardHistory { get; set; } = new();
 
-    private static readonly Dictionary<ClipboardDataFormat, AClipboardService> _clipboardService;
+    private static readonly Dictionary<ClipboardDataFormat, AClipboardService> _clipboardServices;
     private static ClipboardItem? _selectedClipboardItem;
+    private static IClipboard? GetClipboard()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            return desktop.MainWindow?.Clipboard;
 
+        return null;
+    }
     public static ClipboardItem? SelectedClipboardItem
     {
         get => _selectedClipboardItem;
@@ -30,7 +36,7 @@ public static class ClipboardManager
             if (value != null && ClipboardHistory.Contains(value))
             {
                 _selectedClipboardItem = value;
-                _clipboardService[value.Format].CopyData(value);
+                _clipboardServices[value.Format].CopyData(value);
                 OnSelectExistingClipboardItem?.Invoke(value);
             }
         }
@@ -38,17 +44,10 @@ public static class ClipboardManager
 
     static ClipboardManager()
     {
-        _clipboardService = new Dictionary<ClipboardDataFormat, AClipboardService>();
-        _clipboardService[ClipboardDataFormat.Text] = new TextClipboardService();
+        _clipboardServices = new Dictionary<ClipboardDataFormat, AClipboardService>();
+        _clipboardServices[ClipboardDataFormat.Text] = new TextClipboardService();
     }
 
-    private static IClipboard? GetClipboard()
-    {
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            return desktop.MainWindow?.Clipboard;
-
-        return null;
-    }
 
     public static async Task CheckClipboard()
     {
@@ -61,7 +60,7 @@ public static class ClipboardManager
             if (type == null)
                 return;
             ClipboardItem? item = null;
-            item = await GetItemAsync(clipboard, type.Value);
+            item = await GetItemAsync(type.Value);
             if (item == null)
                 return;
             var existingItem = ClipboardHistory.FirstOrDefault(q => q.Signature == item?.Signature);
@@ -96,36 +95,20 @@ public static class ClipboardManager
         return null;
     }
 
-    public static async Task<ClipboardItem?> GetItemAsync(IClipboard clipboard, ClipboardDataFormat type)
+    private static async Task<ClipboardItem?> GetItemAsync(ClipboardDataFormat type)
     {
         ClipboardItem? item = null;
-        switch (type)
-        {
-            case ClipboardDataFormat.Text:
-                item = await _clipboardService[type].GetDataAsync(await clipboard.TryGetTextAsync());
-
-                break;
-        }
-
+        item = await _clipboardServices[type].GetDataAsync();
         if (item == null) return item;
-        await _clipboardService[type].CreateSignature(item);
+        await _clipboardServices[type].CreateSignature(item);
         item.OnDelete += DeleteClipboardItem;
         return item;
     }
 
 
     public static async Task SetClipboardItemAsync(ClipboardItem targetItem)
-    {
-        var clipboard = GetClipboard();
-        if (clipboard == null)
-            return;
-
-        switch (targetItem.Format)
-        {
-            case ClipboardDataFormat.Text:
-                await clipboard.SetTextAsync(targetItem.Text);
-                break;
-        }
+    { 
+        await _clipboardServices[targetItem.Format].CopyData(targetItem);
     }
 
     public static void ClearClipboardHistory()
