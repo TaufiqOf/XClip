@@ -34,7 +34,7 @@ public partial class ClipboardItem : ViewModelBase
             OnPropertyChanged();
 
             var displayText = value.Trim();
-            displayText = displayText.Length > 100 ? displayText.Substring(0, 100) + "..." : displayText;
+            displayText = displayText.Length > 600 ? displayText.Substring(0, 600) + "..." : displayText;
             DisplayText = displayText;
             OnPropertyChanged(nameof(DisplayText));
         }

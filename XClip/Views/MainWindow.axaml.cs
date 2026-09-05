@@ -32,13 +32,48 @@ public partial class MainWindow : Window
         InitializeComponent();
         Opened += OnOpened;
         Closed += OnClosed;
-
+        Deactivated += OnWindowDeactivated;
+        DoubleTapped += OnDoubleTapped;
         // Use Tunnel routing strategy to catch key presses before ListBox consumes them
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
     }
 
+    private void OnDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        HideToTray();
+        _ = _viewModel.DoubleClickAsync();
+        _ = _hotkeyService.SimulatePasteAsync();
+    }
+
+    private void OnWindowDeactivated(object? sender, EventArgs e)
+    {
+        if (IsVisible)
+        {
+            HideToTray();
+        }
+    }
+
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
+        if (e.Key == Key.S && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            e.Handled = true;
+            SearchTextBox.Focus();
+            SearchTextBox.SelectAll();
+        }
+        if(e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            HideToTray();
+        }
+
+        if (e.Key== Key.Enter)
+        {
+            HideToTray();
+            _ = _viewModel.DoubleClickAsync();
+            _ = _hotkeyService.SimulatePasteAsync();
+        }
+
         _viewModel.OnWindowKeyDown(e);
     }
 
@@ -81,22 +116,43 @@ public partial class MainWindow : Window
         Show();
         WindowState = WindowState.Normal;
         PositionInBottomRight();
-
         Activate();
         Dispatcher.UIThread.Post(FocusControls, DispatcherPriority.Input);
     }
 
     private void FocusControls()
     {
+        // Bring window to front natively
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
         Activate();
 
-        if (ListBox.SelectedItem == null) ListBox.SelectedIndex = 0;
+        // Give the OS window manager a frame to settle activation before setting control focus
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (DataContext is MainViewModel vm && vm.FilteredHistory.Any())
+            {
+                if (ListBox.SelectedIndex < 0)
+                    ListBox.SelectedIndex = 0;
 
-        var container = ListBox.ContainerFromIndex(ListBox.SelectedIndex);
-        if (container != null)
-            container.Focus();
-        else
-            ListBox.Focus();
+                var container = ListBox.ContainerFromIndex(ListBox.SelectedIndex);
+                if (container is Control control)
+                {
+                    control.Focus();
+                }
+                else
+                {
+                    ListBox.Focus();
+                }
+            }
+            else
+            {
+                ListBox.Focus();
+            }
+        }, DispatcherPriority.Render);
     }
 
     private void OnClosed(object? sender, EventArgs e)
