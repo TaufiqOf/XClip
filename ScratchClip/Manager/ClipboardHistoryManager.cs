@@ -139,9 +139,9 @@ public static class ClipboardHistoryManager
                     Timestamp = record.Timestamp == default ? DateTime.Now : record.Timestamp,
                     MataData = record.MataData!,
                 };
-                await item.PopulateMetadataAsync();
                 item.Tags.Clear();
                 item.Tags.AddRange(record.Tags ?? new List<string>());
+                item.UpdateByTags();
                 return item;
             }
             case ClipboardDataFormat.Image:
